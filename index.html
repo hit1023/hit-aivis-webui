@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AivisSpeech Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b14;
+    --surface: #0d1120;
+    --surface2: #131929;
+    --border: #1e2d4a;
+    --accent: #4f8eff;
+    --accent2: #a855f7;
+    --text: #e8edf8;
+    --text-muted: #5a6a8a;
+    --success: #22d3a0;
+    --error: #ff4f6a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 3rem;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 300;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.8rem;
+    margin-bottom: 1.2rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .card:nth-child(2) { animation-delay: 0.1s; }
+  .card:nth-child(3) { animation-delay: 0.2s; }
+  .card:nth-child(4) { animation-delay: 0.3s; }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+  }
+
+  /* Speaker select */
+  .select-wrapper {
+    position: relative;
+  }
+
+  select {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.95rem;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  select:focus { outline: none; border-color: var(--accent); }
+
+  .select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  /* Textarea */
+  textarea {
+    width: 100%;
+    padding: 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.95rem;
+    resize: vertical;
+    min-height: 120px;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+
+  textarea:focus { outline: none; border-color: var(--accent); }
+  textarea::placeholder { color: var(--text-muted); }
+
+  .char-count {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+  }
+
+  /* Sliders */
+  .params-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+  }
+
+  @media (max-width: 600px) {
+    .params-grid { grid-template-columns: 1fr; }
+  }
+
+  .param-item label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .param-item label span {
+    color: var(--accent);
+    font-weight: 500;
+    font-family: 'Syne', sans-serif;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(79,142,255,0.5);
+  }
+
+  /* Button */
+  .btn-speak {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 1.2rem;
+  }
+
+  .btn-speak:hover { opacity: 0.9; }
+  .btn-speak:active { transform: scale(0.99); }
+  .btn-speak:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-speak .btn-text { position: relative; z-index: 1; }
+
+  /* Loading shimmer */
+  .btn-speak.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer 1.2s infinite;
+  }
+
+  /* Audio player */
+  .player-area {
+    display: none;
+  }
+
+  .player-area.visible {
+    display: block;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .waveform-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .wave-bars {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    height: 32px;
+  }
+
+  .wave-bar {
+    width: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: none;
+  }
+
+  .wave-bar.playing {
+    animation: wavePulse 0.8s ease infinite;
+  }
+
+  .wave-bar:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .wave-bar:nth-child(2) { height: 70%; animation-delay: 0.1s; }
+  .wave-bar:nth-child(3) { height: 100%; animation-delay: 0.2s; }
+  .wave-bar:nth-child(4) { height: 60%; animation-delay: 0.15s; }
+  .wave-bar:nth-child(5) { height: 80%; animation-delay: 0.05s; }
+  .wave-bar:nth-child(6) { height: 45%; animation-delay: 0.25s; }
+  .wave-bar:nth-child(7) { height: 90%; animation-delay: 0.1s; }
+  .wave-bar:nth-child(8) { height: 55%; animation-delay: 0.2s; }
+
+  audio {
+    width: 100%;
+    margin-top: 0.5rem;
+    border-radius: 8px;
+    accent-color: var(--accent);
+  }
+
+  .dl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.8rem;
+    padding: 0.5rem 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+    cursor: pointer;
+  }
+
+  .dl-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Status */
+  .status {
+    font-size: 0.82rem;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    margin-top: 0.8rem;
+    display: none;
+  }
+
+  .status.error {
+    display: block;
+    background: rgba(255,79,106,0.1);
+    border: 1px solid rgba(255,79,106,0.3);
+    color: var(--error);
+  }
+
+  .status.success {
+    display: block;
+    background: rgba(34,211,160,0.1);
+    border: 1px solid rgba(34,211,160,0.3);
+    color: var(--success);
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
+
+  @keyframes wavePulse {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.3); }
+  }
+
+  /* API URL indicator */
+  .api-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+  }
+
+  .api-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎙</div>
+      <h1>AivisSpeech Studio</h1>
+    </div>
+    <p class="subtitle">Text-to-Speech powered by AivisSpeech Engine</p>
+  </header>
+
+  <!-- Speaker -->
+  <div class="card">
+    <div class="card-title">スピーカー</div>
+    <div class="select-wrapper">
+      <select id="speakerSelect">
+        <option value="">読み込み中...</option>
+      </select>
+      <span class="select-arrow">▾</span>
+    </div>
+    <div class="api-indicator">
+      <div class="api-dot"></div>
+      <span id="apiStatus">接続中...</span>
+    </div>
+  </div>
+
+  <!-- Text -->
+  <div class="card">
+    <div class="card-title">テキスト</div>
+    <textarea id="textInput" placeholder="読み上げるテキストを入力してください..." maxlength="500"></textarea>
+    <div class="char-count"><span id="charCount">0</span> / 500</div>
+  </div>
+
+  <!-- Parameters -->
+  <div class="card">
+    <div class="card-title">パラメータ</div>
+    <div class="params-grid">
+      <div class="param-item">
+        <label>話速 <span id="speedVal">1.0</span></label>
+        <input type="range" id="speed" min="0.5" max="2.0" step="0.05" value="1.0">
+      </div>
+      <div class="param-item">
+        <label>音高 <span id="pitchVal">0.00</span></label>
+        <input type="range" id="pitch" min="-0.15" max="0.15" step="0.01" value="0.0">
+      </div>
+      <div class="param-item">
+        <label>抑揚 <span id="intonationVal">1.0</span></label>
+        <input type="range" id="intonation" min="0.0" max="2.0" step="0.05" value="1.0">
+      </div>
+      <div class="param-item">
+        <label>音量 <span id="volumeVal">1.0</span></label>
+        <input type="range" id="volume" min="0.0" max="2.0" step="0.05" value="1.0">
+      </div>
+    </div>
+
+    <button class="btn-speak" id="speakBtn" onclick="speak()">
+      <span class="btn-text">🎵 音声を生成</span>
+    </button>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- Player -->
+  <div class="card player-area" id="playerArea">
+    <div class="card-title">再生</div>
+    <div class="waveform-bar">
+      <div class="wave-bars" id="waveBars">
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+    </div>
+    <audio id="audioPlayer" controls></audio>
+    <br>
+    <a class="dl-btn" id="dlBtn">⬇ ダウンロード</a>
+  </div>
+</div>
+
+<script>
+const API = 'https://me-aivis-rt.mnet.mscmnstr.xyz';
+
+// スピーカー読み込み
+async function loadSpeakers() {
+  try {
+    const res = await fetch(`${API}/speakers`);
+    const speakers = await res.json();
+    const sel = document.getElementById('speakerSelect');
+    sel.innerHTML = '';
+    speakers.forEach(sp => {
+      sp.styles.forEach(st => {
+        const opt = document.createElement('option');
+        opt.value = st.id;
+        opt.textContent = `${sp.name} — ${st.name}`;
+        sel.appendChild(opt);
+      });
+    });
+    document.getElementById('apiStatus').textContent = `${speakers.length} スピーカー接続済み`;
+  } catch(e) {
+    document.getElementById('apiStatus').textContent = '接続失敗';
+    document.querySelector('.api-dot').style.background = '#ff4f6a';
+  }
+}
+
+// スライダー表示更新
+['speed','pitch','intonation','volume'].forEach(id => {
+  const el = document.getElementById(id);
+  const val = document.getElementById(id + 'Val');
+  el.addEventListener('input', () => {
+    val.textContent = parseFloat(el.value).toFixed(id === 'pitch' ? 2 : 1);
+  });
+});
+
+// 文字数カウント
+document.getElementById('textInput').addEventListener('input', function() {
+  document.getElementById('charCount').textContent = this.value.length;
+});
+
+// 音声生成
+async function speak() {
+  const text = document.getElementById('textInput').value.trim();
+  const speakerId = parseInt(document.getElementById('speakerSelect').value);
+  const btn = document.getElementById('speakBtn');
+  const status = document.getElementById('status');
+
+  if (!text) {
+    showStatus('テキストを入力してください', 'error');
+    return;
+  }
+  if (!speakerId) {
+    showStatus('スピーカーを選択してください', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.btn-text').textContent = '⏳ 生成中...';
+  status.className = 'status';
+
+  try {
+    const res = await fetch(`${API}/speak`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        speaker_id: speakerId,
+        speed: parseFloat(document.getElementById('speed').value),
+        pitch: parseFloat(document.getElementById('pitch').value),
+        intonation: parseFloat(document.getElementById('intonation').value),
+        volume: parseFloat(document.getElementById('volume').value),
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || '生成に失敗しました');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = document.getElementById('audioPlayer');
+    audio.src = url;
+    audio.play();
+
+    // ダウンロードリンク
+    const dl = document.getElementById('dlBtn');
+    dl.href = url;
+    dl.download = `aivis_${Date.now()}.mp3`;
+
+    // プレイヤー表示
+    document.getElementById('playerArea').classList.add('visible');
+
+    // 波形アニメーション
+    const bars = document.querySelectorAll('.wave-bar');
+    audio.addEventListener('play', () => bars.forEach(b => b.classList.add('playing')));
+    audio.addEventListener('pause', () => bars.forEach(b => b.classList.remove('playing')));
+    audio.addEventListener('ended', () => bars.forEach(b => b.classList.remove('playing')));
+
+    showStatus('✓ 生成完了', 'success');
+  } catch(e) {
+    showStatus(`エラー: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('.btn-text').textContent = '🎵 音声を生成';
+  }
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = `status ${type}`;
+}
+
+loadSpeakers();
+</script>
+</body>
+</html>

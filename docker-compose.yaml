@@ -1,0 +1,7 @@
+services:
+  aivis-webui:
+    build: .
+    container_name: aivis-webui
+    restart: unless-stopped
+    ports:
+      - "8888:80"
