@@ -831,7 +831,7 @@
         <div class="form-group">
           <label>読み（カタカナ） <span style="color:var(--error)">*</span></label>
           <input type="text" id="newPronunciation" placeholder="トウキョウスカイツリー"
-                 oninput="updateVizPron('addViz', this.value)">
+                 oninput="this.value=toKatakana(this.value); updateVizPron('addViz', this.value)">
         </div>
         <div class="form-group">
           <label>品詞</label>
@@ -1086,6 +1086,13 @@ const YH = 14;       // 高(H)のY座標
 const YL = 54;       // 低(L)のY座標
 const YTxt = 78;     // モーラ文字のY座標
 
+// ひらがな → カタカナ変換（U+3041〜U+3096 → U+30A1〜U+30F6）
+function toKatakana(str) {
+  return str.replace(/[ぁ-ゖ]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) + 0x60)
+  );
+}
+
 // モーラに分割（拗音・促音を前の文字に結合）
 function splitMora(kata) {
   const small = new Set([...'ァィゥェォャュョッヮヵヶ']);
@@ -1327,7 +1334,7 @@ function renderDict() {
           <div class="form-group">
             <label>読み（カタカナ）</label>
             <input type="text" id="ep-${uuid}" value="${esc(pron)}"
-                   oninput="updateVizPron('eviz-${uuid}', this.value)">
+                   oninput="this.value=toKatakana(this.value); updateVizPron('eviz-${uuid}', this.value)">
           </div>
           <div class="form-group">
             <label>品詞</label>
