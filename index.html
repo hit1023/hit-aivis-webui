@@ -732,6 +732,7 @@
   <nav class="tab-nav">
     <button class="tab-btn active" onclick="switchTab('tts')">🎵 音声合成</button>
     <button class="tab-btn" onclick="switchTab('dict')">📖 単語辞書</button>
+    <button class="tab-btn" onclick="switchTab('replacer')">📝 置換ルール</button>
   </nav>
 
   <!-- ============================
@@ -897,6 +898,65 @@
     </div>
 
   </div><!-- /page-dict -->
+
+  <!-- ============================
+       置換ルール
+       ============================ -->
+  <div class="page" id="page-replacer">
+
+    <!-- ルール追加フォーム -->
+    <div class="card">
+      <div class="card-title">ルールを追加</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
+        音声合成前にテキストへ適用する置換ルールを登録します。<br>
+        例: <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px">Mumon → ミューモン</code>
+        と設定すると、TTS に送るテキスト中の <em>Mumon</em> が <em>ミューモン</em> に変換されてから AivisSpeech へ渡されます。
+      </p>
+      <div class="dict-form-grid">
+        <div class="form-group">
+          <label>置換前テキスト <span style="color:var(--error)">*</span></label>
+          <input type="text" id="repSrc" placeholder="Mumon">
+        </div>
+        <div class="form-group">
+          <label>置換後テキスト</label>
+          <input type="text" id="repDst" placeholder="ミューモン">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:0.6rem;margin-top:0.6rem">
+        <button class="btn-ghost" onclick="clearRepForm()">クリア</button>
+        <button class="btn-primary" id="addRepBtn" onclick="addReplacement()">＋ 追加する</button>
+      </div>
+      <div class="status" id="repStatus"></div>
+    </div>
+
+    <!-- ルール一覧 -->
+    <div class="card">
+      <div class="dict-header">
+        <div class="card-title" style="margin-bottom:0">登録ルール</div>
+        <div style="display:flex;align-items:center;gap:0.6rem">
+          <span class="dict-count" id="repCount">― 件</span>
+          <button class="refresh-btn" id="repRefreshBtn" onclick="loadReplacements()">
+            <svg id="repRefreshIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+            </svg>
+            更新
+          </button>
+        </div>
+      </div>
+
+      <div class="dict-search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="dict-search" id="repSearch"
+               placeholder="置換前・後テキストで絞り込み..." oninput="filterReplacements()">
+      </div>
+
+      <div class="dict-list" id="repList">
+        <div class="dict-empty">読み込み中...</div>
+      </div>
+    </div>
+
+  </div><!-- /page-replacer -->
+
 </div>
 
 <!-- 削除確認ダイアログ -->
@@ -924,13 +984,15 @@ const WORD_TYPE_LABELS = {
 // ==========================================
 //  タブ
 // ==========================================
+const _TABS = ['tts', 'dict', 'replacer'];
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['tts','dict'][i] === tab);
+    b.classList.toggle('active', _TABS[i] === tab);
   });
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(`page-${tab}`).classList.add('active');
   if (tab === 'dict') loadDict();
+  if (tab === 'replacer') loadReplacements();
 }
 
 // ==========================================
@@ -1525,6 +1587,131 @@ document.getElementById('deleteDialog').addEventListener('click', function(e) {
 ['newSurface','newPronunciation'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => {
     if (e.key === 'Enter') addWord();
+  });
+});
+
+// ==========================================
+//  テキスト置換ルール
+// ==========================================
+let _repData = {};
+let _repSearch = '';
+
+function showRepStatus(msg, type) {
+  const el = document.getElementById('repStatus');
+  el.textContent = msg;
+  el.className = `status ${type}`;
+  if (type === 'success') setTimeout(() => { el.className = 'status'; }, 3000);
+}
+
+async function loadReplacements() {
+  const btn = document.getElementById('repRefreshBtn');
+  const icon = document.getElementById('repRefreshIcon');
+  btn.disabled = true;
+  icon.style.animation = 'spin 0.8s linear infinite';
+  try {
+    const res = await fetch(`${API}/text_replacements`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    _repData = await res.json();
+    renderReplacements();
+  } catch(e) {
+    document.getElementById('repList').innerHTML = `<div class="dict-empty">取得に失敗しました: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    icon.style.animation = '';
+  }
+}
+
+function renderReplacements() {
+  const list = document.getElementById('repList');
+  const q = _repSearch.trim().toLowerCase();
+
+  let entries = Object.entries(_repData);
+  if (q) {
+    entries = entries.filter(([src, dst]) =>
+      src.toLowerCase().includes(q) || dst.toLowerCase().includes(q)
+    );
+  }
+
+  document.getElementById('repCount').textContent = `${entries.length} 件`;
+
+  if (!entries.length) {
+    list.innerHTML = `<div class="dict-empty">${q ? '一致するルールが見つかりません' : '登録されたルールはありません'}</div>`;
+    return;
+  }
+
+  list.innerHTML = entries.map(([src, dst]) => `
+    <div class="word-row">
+      <div class="word-row-main">
+        <div style="display:flex;align-items:center;gap:0.8rem;flex:1;flex-wrap:wrap">
+          <span class="word-surface">${esc(src)}</span>
+          <span style="color:var(--text-muted);font-size:1rem">→</span>
+          <span style="color:var(--text);font-size:0.9rem">${esc(dst) || '<em style="color:var(--text-muted)">(空文字)</em>'}</span>
+        </div>
+        <div class="word-actions">
+          <button class="btn-danger" onclick="deleteReplacement(${JSON.stringify(src)})">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function filterReplacements() {
+  _repSearch = document.getElementById('repSearch').value;
+  renderReplacements();
+}
+
+async function addReplacement() {
+  const src = document.getElementById('repSrc').value;
+  const dst = document.getElementById('repDst').value;
+
+  if (!src.trim()) { showRepStatus('置換前テキストを入力してください', 'error'); return; }
+
+  const btn = document.getElementById('addRepBtn');
+  btn.disabled = true;
+  btn.textContent = '追加中...';
+
+  try {
+    const res = await fetch(`${API}/text_replacements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ src, dst }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    clearRepForm();
+    await loadReplacements();
+    showRepStatus(`✓ 「${src}」→「${dst}」を登録しました`, 'success');
+  } catch(e) {
+    showRepStatus(`エラー: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '＋ 追加する';
+  }
+}
+
+async function deleteReplacement(src) {
+  if (!confirm(`「${src}」の置換ルールを削除しますか？`)) return;
+  try {
+    const res = await fetch(`${API}/text_replacements?src=${encodeURIComponent(src)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await loadReplacements();
+    showRepStatus(`✓ 「${src}」のルールを削除しました`, 'success');
+  } catch(e) {
+    showRepStatus(`エラー: ${e.message}`, 'error');
+  }
+}
+
+function clearRepForm() {
+  document.getElementById('repSrc').value = '';
+  document.getElementById('repDst').value = '';
+  document.getElementById('repStatus').className = 'status';
+}
+
+// Enter で追加（置換ルールフォーム）
+['repSrc', 'repDst'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') addReplacement();
   });
 });
 
