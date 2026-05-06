@@ -360,6 +360,123 @@
     50% { transform: scaleY(0.3); }
   }
 
+  /* VRAM Status */
+  .vram-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .model-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .model-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.2s;
+  }
+
+  .model-row.loaded { border-color: rgba(34,211,160,0.25); }
+
+  .model-info { display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .model-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .model-backend {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .vram-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .vram-badge.on {
+    background: rgba(34,211,160,0.12);
+    color: var(--success);
+    border: 1px solid rgba(34,211,160,0.3);
+  }
+
+  .vram-badge.off {
+    background: rgba(90,106,138,0.12);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .vram-badge.on .badge-dot {
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+    animation: pulse 2s infinite;
+  }
+
+  .vram-badge.off .badge-dot { background: var(--text-muted); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .vram-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 1.5rem 0;
+  }
+
+  .last-updated {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 0.8rem;
+  }
+
   /* API URL indicator */
   .api-indicator {
     display: flex;
@@ -438,6 +555,23 @@
     </button>
 
     <div class="status" id="status"></div>
+  </div>
+
+  <!-- VRAM Status -->
+  <div class="card" style="animation-delay:0.3s">
+    <div class="vram-header">
+      <div class="card-title" style="margin-bottom:0">VRAMロード状態</div>
+      <button class="refresh-btn" id="refreshBtn" onclick="loadModels()">
+        <svg id="refreshIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+        </svg>
+        更新
+      </button>
+    </div>
+    <div class="model-list" id="modelList">
+      <div class="vram-empty">読み込み中...</div>
+    </div>
+    <div class="last-updated" id="lastUpdated"></div>
   </div>
 
   <!-- Player -->
@@ -576,7 +710,50 @@ function showStatus(msg, type) {
   el.className = `status ${type}`;
 }
 
+// VRAMモデル状態
+async function loadModels() {
+  const btn = document.getElementById('refreshBtn');
+  const icon = document.getElementById('refreshIcon');
+  btn.disabled = true;
+  icon.style.animation = 'spin 0.8s linear infinite';
+
+  try {
+    const res = await fetch(`${API}/models`);
+    const models = await res.json();
+    const list = document.getElementById('modelList');
+
+    if (!models.length) {
+      list.innerHTML = '<div class="vram-empty">モデルが見つかりません</div>';
+      return;
+    }
+
+    list.innerHTML = models.map(m => `
+      <div class="model-row ${m.is_loaded ? 'loaded' : ''}">
+        <div class="model-info">
+          <div class="model-name">${m.model_name}</div>
+          <div class="model-backend">${m.speakers.map(s => s.name).join(' · ')} &nbsp;·&nbsp; ${m.backend_url.replace('https://','')}</div>
+        </div>
+        <div class="vram-badge ${m.is_loaded ? 'on' : 'off'}">
+          <div class="badge-dot"></div>
+          ${m.is_loaded ? 'VRAM ロード中' : 'アンロード'}
+        </div>
+      </div>
+    `).join('');
+
+    const now = new Date().toLocaleTimeString('ja-JP');
+    document.getElementById('lastUpdated').textContent = `最終更新: ${now}`;
+  } catch(e) {
+    document.getElementById('modelList').innerHTML = '<div class="vram-empty">取得に失敗しました</div>';
+  } finally {
+    btn.disabled = false;
+    icon.style.animation = '';
+  }
+}
+
 loadSpeakers();
+loadModels();
+// 30秒ごとに自動更新
+setInterval(loadModels, 30000);
 </script>
 </body>
 </html>
