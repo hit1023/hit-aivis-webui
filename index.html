@@ -17,7 +17,6 @@
     --text-muted: #5a6a8a;
     --success: #22d3a0;
     --error: #ff4f6a;
-    --warning: #f59e0b;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -86,7 +85,6 @@
     gap: 0.4rem;
     margin-bottom: 1.8rem;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 0;
   }
 
   .tab-btn {
@@ -105,11 +103,7 @@
   }
 
   .tab-btn:hover { color: var(--text); }
-
-  .tab-btn.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
   /* Pages */
   .page { display: none; }
@@ -193,7 +187,7 @@
     margin-top: 0.4rem;
   }
 
-  /* Input */
+  /* Text / Number inputs */
   input[type="text"], input[type="number"] {
     width: 100%;
     padding: 0.75rem 1rem;
@@ -208,23 +202,19 @@
 
   input[type="text"]:focus,
   input[type="number"]:focus { outline: none; border-color: var(--accent); }
-
   input[type="text"]::placeholder { color: var(--text-muted); }
-
   input[type="number"] { -moz-appearance: textfield; }
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-  /* Sliders */
+  /* Sliders (TTS params) */
   .params-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.2rem;
   }
 
-  @media (max-width: 600px) {
-    .params-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 600px) { .params-grid { grid-template-columns: 1fr; } }
 
   .param-item label {
     display: flex;
@@ -340,27 +330,11 @@
   .player-area { display: none; }
   .player-area.visible { display: block; animation: fadeUp 0.4s ease both; }
 
-  .waveform-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
+  .waveform-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
 
-  .wave-bars {
-    display: flex;
-    gap: 3px;
-    align-items: center;
-    height: 32px;
-  }
+  .wave-bars { display: flex; gap: 3px; align-items: center; height: 32px; }
 
-  .wave-bar {
-    width: 3px;
-    background: var(--accent);
-    border-radius: 2px;
-    animation: none;
-  }
-
+  .wave-bar { width: 3px; background: var(--accent); border-radius: 2px; animation: none; }
   .wave-bar.playing { animation: wavePulse 0.8s ease infinite; }
   .wave-bar:nth-child(1) { height: 40%; animation-delay: 0s; }
   .wave-bar:nth-child(2) { height: 70%; animation-delay: 0.1s; }
@@ -371,12 +345,7 @@
   .wave-bar:nth-child(7) { height: 90%; animation-delay: 0.1s; }
   .wave-bar:nth-child(8) { height: 55%; animation-delay: 0.2s; }
 
-  audio {
-    width: 100%;
-    margin-top: 0.5rem;
-    border-radius: 8px;
-    accent-color: var(--accent);
-  }
+  audio { width: 100%; margin-top: 0.5rem; border-radius: 8px; accent-color: var(--accent); }
 
   .dl-btn {
     display: inline-flex;
@@ -420,12 +389,7 @@
   }
 
   /* VRAM */
-  .vram-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-  }
+  .vram-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 
   .refresh-btn {
     background: none;
@@ -474,30 +438,11 @@
     white-space: nowrap;
   }
 
-  .vram-badge.on {
-    background: rgba(34,211,160,0.12);
-    color: var(--success);
-    border: 1px solid rgba(34,211,160,0.3);
-  }
+  .vram-badge.on { background: rgba(34,211,160,0.12); color: var(--success); border: 1px solid rgba(34,211,160,0.3); }
+  .vram-badge.off { background: rgba(90,106,138,0.12); color: var(--text-muted); border: 1px solid var(--border); }
 
-  .vram-badge.off {
-    background: rgba(90,106,138,0.12);
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-  }
-
-  .badge-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .vram-badge.on .badge-dot {
-    background: var(--success);
-    box-shadow: 0 0 6px var(--success);
-    animation: pulse 2s infinite;
-  }
-
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .vram-badge.on .badge-dot { background: var(--success); box-shadow: 0 0 6px var(--success); animation: pulse 2s infinite; }
   .vram-badge.off .badge-dot { background: var(--text-muted); }
 
   .unload-btn {
@@ -516,41 +461,15 @@
   .unload-btn:hover { background: rgba(255,79,106,0.1); border-color: var(--error); }
   .unload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .vram-empty {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    padding: 1.5rem 0;
-  }
+  .vram-empty { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 1.5rem 0; }
+  .last-updated { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 0.8rem; }
 
-  .last-updated {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    text-align: right;
-    margin-top: 0.8rem;
-  }
+  .api-indicator { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
+  .api-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px var(--success); }
 
-  .api-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-top: 0.5rem;
-  }
-
-  .api-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--success);
-    box-shadow: 0 0 6px var(--success);
-  }
-
-  /* =====================
-     単語辞書 ページ
-     ===================== */
-
-  /* 単語追加フォーム */
+  /* ========================
+     単語辞書
+     ======================== */
   .dict-form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -558,33 +477,15 @@
     margin-bottom: 1rem;
   }
 
-  @media (max-width: 600px) {
-    .dict-form-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 600px) { .dict-form-grid { grid-template-columns: 1fr; } }
 
   .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
 
-  .form-group label {
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  .form-group .hint {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    opacity: 0.7;
-  }
+  .form-group label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
 
   .form-row-full { grid-column: 1 / -1; }
 
-  /* 単語一覧 */
-  .dict-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-  }
+  .dict-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 
   .dict-count {
     font-size: 0.75rem;
@@ -597,14 +498,8 @@
 
   .dict-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
-  .dict-empty {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    padding: 2rem 0;
-  }
+  .dict-empty { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; }
 
-  /* 単語行 */
   .word-row {
     background: var(--surface2);
     border: 1px solid var(--border);
@@ -615,32 +510,13 @@
 
   .word-row:hover { border-color: rgba(79,142,255,0.25); }
 
-  .word-row-main {
-    display: flex;
-    align-items: center;
-    padding: 0.8rem 1rem;
-    gap: 1rem;
-  }
+  .word-row-main { display: flex; align-items: center; padding: 0.8rem 1rem; gap: 1rem; }
 
-  .word-surface {
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--text);
-    min-width: 100px;
-  }
+  .word-surface { font-size: 1rem; font-weight: 500; color: var(--text); min-width: 80px; }
 
-  .word-reading {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    flex: 1;
-  }
+  .word-reading { font-size: 0.8rem; color: var(--text-muted); flex: 1; }
 
-  .word-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
-  }
+  .word-meta { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
 
   .word-type-badge {
     font-size: 0.7rem;
@@ -652,17 +528,9 @@
     white-space: nowrap;
   }
 
-  .word-priority {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    font-family: 'Syne', sans-serif;
-  }
+  .word-priority { font-size: 0.7rem; color: var(--text-muted); font-family: 'Syne', sans-serif; }
 
-  .word-actions {
-    display: flex;
-    gap: 0.4rem;
-    flex-shrink: 0;
-  }
+  .word-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
 
   .btn-edit {
     padding: 0.3rem 0.7rem;
@@ -678,7 +546,6 @@
 
   .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* インライン編集フォーム */
   .word-edit-form {
     display: none;
     padding: 1rem;
@@ -696,26 +563,11 @@
     margin-bottom: 0.8rem;
   }
 
-  @media (max-width: 580px) { .edit-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 580px) { .edit-grid { grid-column: 1fr; } }
 
-  .edit-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-  }
+  .edit-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
 
-  /* アクセント型ヘルプ */
-  .accent-help {
-    font-size: 0.68rem;
-    color: var(--text-muted);
-    margin-top: 0.3rem;
-  }
-
-  /* 検索バー */
-  .dict-search-wrap {
-    position: relative;
-    margin-bottom: 0.8rem;
-  }
+  .dict-search-wrap { position: relative; margin-bottom: 0.8rem; }
 
   .dict-search {
     width: 100%;
@@ -742,29 +594,81 @@
     font-size: 0.85rem;
   }
 
-  /* Animations */
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-16px); }
-    to { opacity: 1; transform: translateY(0); }
+  /* ========================
+     アクセントビジュアライザー
+     ======================== */
+  .accent-viz-wrap {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.9rem 1rem 0.5rem;
+    margin-top: 0.2rem;
   }
 
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
+  .accent-viz-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
   }
 
-  @keyframes shimmer {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(100%); }
+  .accent-viz-label { font-size: 0.75rem; color: var(--text-muted); }
+
+  .accent-viz-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 1.6em;
   }
 
-  @keyframes wavePulse {
-    0%, 100% { transform: scaleY(1); }
-    50% { transform: scaleY(0.3); }
+  .accent-viz-desc {
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: rgba(79,142,255,0.1);
+    border: 1px solid rgba(79,142,255,0.2);
+    border-radius: 20px;
+    padding: 0.15rem 0.65rem;
   }
 
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .accent-range {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    appearance: none;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .accent-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(79,142,255,0.6);
+  }
+
+  .accent-range::-moz-range-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(79,142,255,0.6);
+  }
+
+  .accent-svg-scroll { overflow-x: auto; overflow-y: hidden; }
+  .accent-svg-scroll svg { display: block; }
+
+  .accent-placeholder {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 1rem 0 0.5rem;
+  }
 
   /* 削除確認ダイアログ */
   .dialog-overlay {
@@ -790,20 +694,9 @@
     animation: fadeUp 0.25s ease;
   }
 
-  .dialog h3 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 0.7rem;
-    color: var(--text);
-  }
+  .dialog h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 0.7rem; }
 
-  .dialog p {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 1.5rem;
-    line-height: 1.6;
-  }
+  .dialog p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
 
   .dialog-word {
     display: inline-block;
@@ -816,6 +709,14 @@
   }
 
   .dialog-actions { display: flex; gap: 0.7rem; justify-content: flex-end; }
+
+  /* Animations */
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+  @keyframes wavePulse { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.3); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 </style>
 </head>
 <body>
@@ -828,24 +729,20 @@
     <p class="subtitle">Text-to-Speech powered by AivisSpeech Engine</p>
   </header>
 
-  <!-- タブナビゲーション -->
   <nav class="tab-nav">
     <button class="tab-btn active" onclick="switchTab('tts')">🎵 音声合成</button>
     <button class="tab-btn" onclick="switchTab('dict')">📖 単語辞書</button>
   </nav>
 
   <!-- ============================
-       Page: 音声合成
+       音声合成
        ============================ -->
   <div class="page active" id="page-tts">
 
-    <!-- Speaker -->
     <div class="card">
       <div class="card-title">スピーカー</div>
       <div class="select-wrapper">
-        <select id="speakerSelect">
-          <option value="">読み込み中...</option>
-        </select>
+        <select id="speakerSelect"><option value="">読み込み中...</option></select>
         <span class="select-arrow">▾</span>
       </div>
       <div class="api-indicator">
@@ -854,14 +751,12 @@
       </div>
     </div>
 
-    <!-- Text -->
     <div class="card">
       <div class="card-title">テキスト</div>
       <textarea id="textInput" placeholder="読み上げるテキストを入力してください..." maxlength="500"></textarea>
       <div class="char-count"><span id="charCount">0</span> / 500</div>
     </div>
 
-    <!-- Parameters -->
     <div class="card">
       <div class="card-title">パラメータ</div>
       <div class="params-grid">
@@ -882,15 +777,12 @@
           <input type="range" id="volume" min="0.0" max="2.0" step="0.05" value="1.0">
         </div>
       </div>
-
       <button class="btn-speak" id="speakBtn" onclick="speak()">
         <span class="btn-text">🎵 音声を生成</span>
       </button>
-
       <div class="status" id="ttsStatus"></div>
     </div>
 
-    <!-- VRAM -->
     <div class="card" style="animation-delay:0.25s">
       <div class="vram-header">
         <div class="card-title" style="margin-bottom:0">VRAMロード状態</div>
@@ -901,25 +793,18 @@
           更新
         </button>
       </div>
-      <div class="model-list" id="modelList">
-        <div class="vram-empty">読み込み中...</div>
-      </div>
+      <div class="model-list" id="modelList"><div class="vram-empty">読み込み中...</div></div>
       <div class="last-updated" id="lastUpdated"></div>
     </div>
 
-    <!-- Player -->
     <div class="card player-area" id="playerArea">
       <div class="card-title">再生</div>
       <div class="waveform-bar">
         <div class="wave-bars" id="waveBars">
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
-          <div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
         </div>
       </div>
       <audio id="audioPlayer" controls></audio>
@@ -930,7 +815,7 @@
   </div><!-- /page-tts -->
 
   <!-- ============================
-       Page: 単語辞書
+       単語辞書
        ============================ -->
   <div class="page" id="page-dict">
 
@@ -945,12 +830,8 @@
         </div>
         <div class="form-group">
           <label>読み（カタカナ） <span style="color:var(--error)">*</span></label>
-          <input type="text" id="newPronunciation" placeholder="トウキョウスカイツリー">
-        </div>
-        <div class="form-group">
-          <label>アクセント型 <span style="color:var(--error)">*</span></label>
-          <input type="number" id="newAccentType" min="0" max="99" placeholder="0">
-          <span class="accent-help">0 = 平板型　1以上 = 下がり目の位置（1始まり）</span>
+          <input type="text" id="newPronunciation" placeholder="トウキョウスカイツリー"
+                 oninput="updateVizPron('addViz', this.value)">
         </div>
         <div class="form-group">
           <label>品詞</label>
@@ -971,16 +852,21 @@
           </div>
         </div>
         <div class="form-group">
-          <label>優先度 <span style="color:var(--text-muted);font-weight:400">（0〜10、推奨: 5）</span></label>
-          <input type="number" id="newPriority" min="0" max="10" value="5" placeholder="5">
+          <label>優先度 <span style="color:var(--text-muted);font-weight:400">（0〜10）</span></label>
+          <input type="number" id="newPriority" min="0" max="10" value="5">
+        </div>
+
+        <!-- アクセントビジュアライザー (全幅) -->
+        <div class="form-group form-row-full">
+          <label>アクセント <span style="color:var(--error)">*</span></label>
+          <div id="addViz"></div>
         </div>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:0.6rem">
+      <div style="display:flex; justify-content:flex-end; gap:0.6rem; margin-top:0.2rem">
         <button class="btn-ghost" onclick="clearAddForm()">クリア</button>
         <button class="btn-primary" id="addWordBtn" onclick="addWord()">＋ 追加する</button>
       </div>
-
       <div class="status" id="dictStatus"></div>
     </div>
 
@@ -1001,7 +887,8 @@
 
       <div class="dict-search-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" class="dict-search" id="dictSearch" placeholder="表層形・読みで絞り込み..." oninput="filterDict()">
+        <input type="text" class="dict-search" id="dictSearch"
+               placeholder="表層形・読みで絞り込み..." oninput="filterDict()">
       </div>
 
       <div class="dict-list" id="dictList">
@@ -1010,7 +897,7 @@
     </div>
 
   </div><!-- /page-dict -->
-</div><!-- /container -->
+</div>
 
 <!-- 削除確認ダイアログ -->
 <div class="dialog-overlay" id="deleteDialog">
@@ -1028,61 +915,52 @@
 const API = 'https://me-aivis-rt.mnet.mscmnstr.xyz';
 
 const WORD_TYPE_LABELS = {
-  PROPER_NOUN: '固有名詞',
-  LOCATION_NAME: '地名',
-  ORGANIZATION_NAME: '組織・施設名',
-  PERSON_NAME: '人名',
-  PERSON_FAMILY_NAME: '人名（姓）',
-  PERSON_GIVEN_NAME: '人名（名）',
-  COMMON_NOUN: '普通名詞',
-  VERB: '動詞',
-  ADJECTIVE: '形容詞',
-  SUFFIX: '語尾',
+  PROPER_NOUN: '固有名詞', LOCATION_NAME: '地名',
+  ORGANIZATION_NAME: '組織・施設名', PERSON_NAME: '人名',
+  PERSON_FAMILY_NAME: '人名（姓）', PERSON_GIVEN_NAME: '人名（名）',
+  COMMON_NOUN: '普通名詞', VERB: '動詞', ADJECTIVE: '形容詞', SUFFIX: '語尾',
 };
 
-// =====================
-// タブ切り替え
-// =====================
+// ==========================================
+//  タブ
+// ==========================================
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active', ['tts','dict'][i] === tab);
   });
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(`page-${tab}`).classList.add('active');
-
   if (tab === 'dict') loadDict();
 }
 
-// =====================
-// 音声合成ページ
-// =====================
+// ==========================================
+//  音声合成
+// ==========================================
 async function loadSpeakers() {
   try {
     const res = await fetch(`${API}/speakers`);
     const speakers = await res.json();
     const sel = document.getElementById('speakerSelect');
     sel.innerHTML = '';
-    speakers.forEach(sp => {
-      sp.styles.forEach(st => {
-        const opt = document.createElement('option');
-        opt.value = st.id;
-        opt.textContent = `${sp.name} — ${st.name}`;
-        sel.appendChild(opt);
-      });
-    });
+    speakers.forEach(sp => sp.styles.forEach(st => {
+      const opt = document.createElement('option');
+      opt.value = st.id;
+      opt.textContent = `${sp.name} — ${st.name}`;
+      sel.appendChild(opt);
+    }));
     document.getElementById('apiStatus').textContent = `${speakers.length} スピーカー接続済み`;
   } catch(e) {
     document.getElementById('apiStatus').textContent = '接続失敗';
-    document.getElementById('apiDot').style.background = '#ff4f6a';
-    document.getElementById('apiDot').style.boxShadow = '0 0 6px #ff4f6a';
+    const dot = document.getElementById('apiDot');
+    dot.style.background = '#ff4f6a';
+    dot.style.boxShadow = '0 0 6px #ff4f6a';
   }
 }
 
 ['speed','pitch','intonation','volume'].forEach(id => {
-  const el = document.getElementById(id);
-  const val = document.getElementById(id + 'Val');
-  el.addEventListener('input', () => {
-    val.textContent = parseFloat(el.value).toFixed(id === 'pitch' ? 2 : 1);
+  document.getElementById(id).addEventListener('input', function() {
+    document.getElementById(id + 'Val').textContent =
+      parseFloat(this.value).toFixed(id === 'pitch' ? 2 : 1);
   });
 });
 
@@ -1122,16 +1000,14 @@ async function speak() {
     const audio = document.getElementById('audioPlayer');
     audio.src = url;
     audio.play();
-
-    const dl = document.getElementById('dlBtn');
-    dl.href = url;
-    dl.download = `aivis_${Date.now()}.mp3`;
+    document.getElementById('dlBtn').href = url;
+    document.getElementById('dlBtn').download = `aivis_${Date.now()}.mp3`;
     document.getElementById('playerArea').classList.add('visible');
 
     const bars = document.querySelectorAll('.wave-bar');
-    audio.addEventListener('play', () => bars.forEach(b => b.classList.add('playing')));
-    audio.addEventListener('pause', () => bars.forEach(b => b.classList.remove('playing')));
-    audio.addEventListener('ended', () => bars.forEach(b => b.classList.remove('playing')));
+    audio.onplay  = () => bars.forEach(b => b.classList.add('playing'));
+    audio.onpause = () => bars.forEach(b => b.classList.remove('playing'));
+    audio.onended = () => bars.forEach(b => b.classList.remove('playing'));
 
     showTtsStatus('✓ 生成完了', 'success');
   } catch(e) {
@@ -1154,33 +1030,25 @@ async function loadModels() {
   const icon = document.getElementById('refreshIcon');
   btn.disabled = true;
   icon.style.animation = 'spin 0.8s linear infinite';
-
   try {
     const res = await fetch(`${API}/models`);
     const models = await res.json();
     const list = document.getElementById('modelList');
-
-    if (!models.length) {
-      list.innerHTML = '<div class="vram-empty">モデルが見つかりません</div>';
-      return;
-    }
-
+    if (!models.length) { list.innerHTML = '<div class="vram-empty">モデルが見つかりません</div>'; return; }
     list.innerHTML = models.map(m => `
-      <div class="model-row ${m.is_loaded ? 'loaded' : ''}" id="row-${m.aivm_uuid}">
+      <div class="model-row ${m.is_loaded ? 'loaded' : ''}">
         <div class="model-info">
           <div class="model-name">${m.model_name}</div>
-          <div class="model-backend">${m.speakers.map(s => s.name).join(' · ')} &nbsp;·&nbsp; ${m.backend_url.replace('https://','')}</div>
+          <div class="model-backend">${m.speakers.map(s=>s.name).join(' · ')} &nbsp;·&nbsp; ${m.backend_url.replace('https://','')}</div>
         </div>
         <div class="model-row-right">
           <div class="vram-badge ${m.is_loaded ? 'on' : 'off'}">
             <div class="badge-dot"></div>
             ${m.is_loaded ? 'VRAM ロード中' : 'アンロード'}
           </div>
-          ${m.is_loaded ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}', '${m.model_name}')">⏏ 解放</button>` : ''}
+          ${m.is_loaded ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')">⏏ 解放</button>` : ''}
         </div>
-      </div>
-    `).join('');
-
+      </div>`).join('');
     document.getElementById('lastUpdated').textContent = `最終更新: ${new Date().toLocaleTimeString('ja-JP')}`;
   } catch(e) {
     document.getElementById('modelList').innerHTML = '<div class="vram-empty">取得に失敗しました</div>';
@@ -1207,11 +1075,177 @@ async function unloadModel(uuid, name) {
   }
 }
 
-// =====================
-// 単語辞書ページ
-// =====================
-let _dictData = {};   // uuid → word object
-let _dictSearch = ''; // フィルタ文字列
+// ==========================================
+//  アクセントビジュアライザー
+// ==========================================
+
+// SVG定数
+const MW = 46;       // 1モーラの横幅
+const SH = 86;       // SVG高さ
+const YH = 14;       // 高(H)のY座標
+const YL = 54;       // 低(L)のY座標
+const YTxt = 78;     // モーラ文字のY座標
+
+// モーラに分割（拗音・促音を前の文字に結合）
+function splitMora(kata) {
+  const small = new Set([...'ァィゥェォャュョッヮヵヶ']);
+  const result = [];
+  for (let i = 0; i < kata.length; i++) {
+    if (!kata[i].trim()) continue;
+    if (i + 1 < kata.length && small.has(kata[i + 1])) {
+      result.push(kata[i] + kata[i + 1]);
+      i++;
+    } else {
+      result.push(kata[i]);
+    }
+  }
+  return result;
+}
+
+// アクセント型から各モーラのH/L配列を計算（末尾に「が」含む）
+function computePitches(n, at) {
+  // n = (単語モーラ数 + 1) で が を含む
+  return Array.from({ length: n }, (_, i) => {
+    if (at === 0) return i > 0;               // L H H H... (が = H)
+    if (at === 1) return i === 0;             // H L L L...
+    return i > 0 && i < at;                   // L H...H L...
+  });
+}
+
+// アクセント型の名称
+function accentDesc(at, moraCount) {
+  if (at === 0) return '平板型';
+  if (at === 1) return '頭高型';
+  if (at === moraCount) return '尾高型';
+  return '中高型';
+}
+
+// ビジュアライザー状態: id → { morae, accentType }
+const _viz = {};
+
+// ビジュアライザーを初期化（または再初期化）
+function initViz(id, pron, at) {
+  _viz[id] = { morae: splitMora(pron), accentType: at };
+  renderViz(id);
+}
+
+// 読みが変わったとき
+function updateVizPron(id, pron) {
+  if (!_viz[id]) return;
+  const morae = splitMora(pron);
+  _viz[id].morae = morae;
+  if (_viz[id].accentType > morae.length) _viz[id].accentType = morae.length;
+  renderViz(id);
+}
+
+// スライダーが動いたとき（SVGと表示のみ更新）
+function onVizSlide(id, val) {
+  if (!_viz[id]) return;
+  _viz[id].accentType = val;
+  const el = document.getElementById(`${id}-val`);
+  const desc = document.getElementById(`${id}-desc`);
+  const svg = document.getElementById(`${id}-svg`);
+  if (el) el.textContent = val;
+  if (desc) desc.textContent = accentDesc(val, _viz[id].morae.length);
+  if (svg) svg.innerHTML = buildSvgContent(_viz[id].morae, val);
+}
+
+// ビジュアライザーUI全体を描画
+function renderViz(id) {
+  const container = document.getElementById(id);
+  if (!container) return;
+  const state = _viz[id];
+
+  if (!state || state.morae.length === 0) {
+    container.innerHTML = `<div class="accent-viz-wrap"><div class="accent-placeholder">読みを入力するとアクセントグラフが表示されます</div></div>`;
+    return;
+  }
+
+  const { morae, accentType: at } = state;
+  const max = morae.length;
+
+  container.innerHTML = `
+    <div class="accent-viz-wrap">
+      <div class="accent-viz-header">
+        <span class="accent-viz-label">アクセント型</span>
+        <span class="accent-viz-val" id="${id}-val">${at}</span>
+        <span class="accent-viz-desc" id="${id}-desc">${accentDesc(at, max)}</span>
+      </div>
+      <input type="range" class="accent-range" min="0" max="${max}" value="${at}"
+             oninput="onVizSlide('${id}', parseInt(this.value))">
+      <div class="accent-svg-scroll">
+        <svg id="${id}-svg" width="${(max + 1) * MW + 16}" height="${SH}"
+             viewBox="0 0 ${(max + 1) * MW + 16} ${SH}"
+             xmlns="http://www.w3.org/2000/svg">
+          ${buildSvgContent(morae, at)}
+        </svg>
+      </div>
+    </div>`;
+}
+
+// SVGの中身だけ構築（再描画時に差し替え）
+function buildSvgContent(morae, at) {
+  const all = [...morae, 'が'];
+  const n = all.length;
+  const W = n * MW + 16;
+  const pitches = computePitches(n, at);
+
+  // 各モーラの中心X
+  const xs = all.map((_, i) => 8 + (i + 0.5) * MW);
+  const ys = pitches.map(h => h ? YH : YL);
+
+  let s = '';
+
+  // H/L 参照ライン（薄い破線）
+  s += `<line x1="4" y1="${YH}" x2="${W - 4}" y2="${YH}" stroke="#1e2d4a" stroke-width="1" stroke-dasharray="3 4"/>`;
+  s += `<line x1="4" y1="${YL}" x2="${W - 4}" y2="${YL}" stroke="#1e2d4a" stroke-width="1" stroke-dasharray="3 4"/>`;
+
+  // H/L ラベル
+  s += `<text x="3" y="${YH + 4}" font-size="8" fill="#2a3a5a" font-family="monospace">H</text>`;
+  s += `<text x="3" y="${YL + 4}" font-size="8" fill="#2a3a5a" font-family="monospace">L</text>`;
+
+  // 単語とが の区切り線
+  const sepX = 8 + (n - 1) * MW;
+  s += `<line x1="${sepX}" y1="${YH - 8}" x2="${sepX}" y2="${YTxt - 6}" stroke="#1e2d4a" stroke-width="1"/>`;
+
+  // アクセントの下がり目（垂直破線）
+  if (at > 0) {
+    const dropX = 8 + at * MW;
+    s += `<line x1="${dropX}" y1="${YH - 4}" x2="${dropX}" y2="${YL + 4}" stroke="rgba(79,142,255,0.5)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+  }
+
+  // ピッチ接続ライン
+  for (let i = 0; i < n - 1; i++) {
+    const toGa = i === n - 2;
+    const color = toGa ? '#2a3a5a' : '#4f8eff';
+    s += `<line x1="${xs[i]}" y1="${ys[i]}" x2="${xs[i+1]}" y2="${ys[i+1]}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>`;
+  }
+
+  // モーラの点
+  for (let i = 0; i < n; i++) {
+    const isGa = i === n - 1;
+    if (isGa) {
+      s += `<circle cx="${xs[i]}" cy="${ys[i]}" r="4" fill="#0d1120" stroke="#2a3a5a" stroke-width="2"/>`;
+    } else {
+      s += `<circle cx="${xs[i]}" cy="${ys[i]}" r="5" fill="#4f8eff"/>`;
+    }
+  }
+
+  // モーラ文字ラベル
+  for (let i = 0; i < n; i++) {
+    const isGa = i === n - 1;
+    const fill = isGa ? '#2a3a5a' : '#8a9ab8';
+    s += `<text x="${xs[i]}" y="${YTxt}" text-anchor="middle" font-size="13" font-family="'Noto Sans JP',sans-serif" fill="${fill}">${all[i]}</text>`;
+  }
+
+  return s;
+}
+
+// ==========================================
+//  単語辞書
+// ==========================================
+let _dictData = {};
+let _dictSearch = '';
 
 function showDictStatus(msg, type) {
   const el = document.getElementById('dictStatus');
@@ -1225,7 +1259,6 @@ async function loadDict() {
   const icon = document.getElementById('dictRefreshIcon');
   btn.disabled = true;
   icon.style.animation = 'spin 0.8s linear infinite';
-
   try {
     const res = await fetch(`${API}/user_dict`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1246,37 +1279,35 @@ function renderDict() {
   let entries = Object.entries(_dictData);
   if (q) {
     entries = entries.filter(([, w]) => {
-      const surface = (w.surface || '').toLowerCase();
-      const pron = Array.isArray(w.pronunciation) ? w.pronunciation.join('') : (w.pronunciation || '');
-      return surface.includes(q) || pron.toLowerCase().includes(q);
+      const s = (w.surface || '').toLowerCase();
+      const p = Array.isArray(w.pronunciation) ? w.pronunciation.join('') : (w.pronunciation || '');
+      return s.includes(q) || p.toLowerCase().includes(q);
     });
   }
 
   document.getElementById('dictCount').textContent = `${entries.length} 件`;
 
-  if (entries.length === 0) {
+  if (!entries.length) {
     list.innerHTML = `<div class="dict-empty">${q ? '一致する単語が見つかりません' : '登録された単語はありません'}</div>`;
     return;
   }
 
   list.innerHTML = entries.map(([uuid, w]) => {
     const surface = w.surface || '';
-    // /user_dict は enable_compound_accent=false (デフォルト) でアクセスしているため
-    // pronunciation/accent_type はスカラーで返ってくる (UserDictWordForCompat)
-    const pron = Array.isArray(w.pronunciation) ? w.pronunciation.join(' · ') : (w.pronunciation || '—');
-    const accent = Array.isArray(w.accent_type) ? w.accent_type.join(', ') : (w.accent_type ?? '—');
-    const wordType = w.word_type || '';
-    const label = WORD_TYPE_LABELS[wordType] || wordType || '—';
-    const priority = w.priority ?? '—';
+    const pron = Array.isArray(w.pronunciation) ? w.pronunciation.join('') : (w.pronunciation || '—');
+    const at = Array.isArray(w.accent_type) ? w.accent_type[0] : (w.accent_type ?? 0);
+    const wordType = w.word_type || 'PROPER_NOUN';
+    const label = WORD_TYPE_LABELS[wordType] || wordType;
+    const priority = w.priority ?? 5;
 
     return `
     <div class="word-row" id="wrow-${uuid}">
       <div class="word-row-main">
         <div class="word-surface">${esc(surface)}</div>
         <div class="word-reading">
-          <span>${esc(pron)}</span>
+          ${esc(pron)}
           <span style="color:var(--border);margin:0 0.4rem">|</span>
-          <span style="font-family:'Syne',sans-serif;font-size:0.75rem">ア型: ${esc(String(accent))}</span>
+          <span style="font-family:'Syne',sans-serif;font-size:0.72rem">ア型 ${at}</span>
         </div>
         <div class="word-meta">
           <span class="word-type-badge">${esc(label)}</span>
@@ -1284,7 +1315,7 @@ function renderDict() {
         </div>
         <div class="word-actions">
           <button class="btn-edit" onclick="toggleEdit('${uuid}')">✏ 編集</button>
-          <button class="btn-danger" onclick="openDeleteDialog('${uuid}', '${esc(surface)}')">🗑</button>
+          <button class="btn-danger" onclick="openDeleteDialog('${uuid}','${esc(surface)}')">🗑</button>
         </div>
       </div>
       <div class="word-edit-form" id="wedit-${uuid}">
@@ -1295,20 +1326,15 @@ function renderDict() {
           </div>
           <div class="form-group">
             <label>読み（カタカナ）</label>
-            <input type="text" id="ep-${uuid}" value="${esc(Array.isArray(w.pronunciation) ? w.pronunciation.join('') : (w.pronunciation || ''))}">
-          </div>
-          <div class="form-group">
-            <label>アクセント型</label>
-            <input type="number" id="ea-${uuid}" min="0" max="99" value="${Array.isArray(w.accent_type) ? w.accent_type[0] : (w.accent_type ?? 0)}">
-            <span class="accent-help">0 = 平板型　1以上 = 下がり目</span>
+            <input type="text" id="ep-${uuid}" value="${esc(pron)}"
+                   oninput="updateVizPron('eviz-${uuid}', this.value)">
           </div>
           <div class="form-group">
             <label>品詞</label>
             <div class="select-wrapper">
               <select id="ew-${uuid}">
-                ${Object.entries(WORD_TYPE_LABELS).map(([k, v]) =>
-                  `<option value="${k}" ${k === wordType ? 'selected' : ''}>${v}</option>`
-                ).join('')}
+                ${Object.entries(WORD_TYPE_LABELS).map(([k,v]) =>
+                  `<option value="${k}" ${k===wordType?'selected':''}>${v}</option>`).join('')}
               </select>
               <span class="select-arrow">▾</span>
             </div>
@@ -1316,6 +1342,10 @@ function renderDict() {
           <div class="form-group">
             <label>優先度（0〜10）</label>
             <input type="number" id="epr-${uuid}" min="0" max="10" value="${priority}">
+          </div>
+          <div class="form-group form-row-full">
+            <label>アクセント</label>
+            <div id="eviz-${uuid}"></div>
           </div>
         </div>
         <div class="edit-actions">
@@ -1329,11 +1359,8 @@ function renderDict() {
 
 function esc(s) {
   return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function filterDict() {
@@ -1344,24 +1371,27 @@ function filterDict() {
 function toggleEdit(uuid) {
   const row = document.getElementById(`wrow-${uuid}`);
   const isEditing = row.classList.contains('editing');
-  // 他を全部閉じる
   document.querySelectorAll('.word-row.editing').forEach(r => r.classList.remove('editing'));
-  if (!isEditing) row.classList.add('editing');
+  if (!isEditing) {
+    row.classList.add('editing');
+    // アクセントビジュアライザーを初期化
+    const w = _dictData[uuid];
+    const pron = Array.isArray(w.pronunciation) ? w.pronunciation.join('') : (w.pronunciation || '');
+    const at = Array.isArray(w.accent_type) ? (w.accent_type[0] ?? 0) : (w.accent_type ?? 0);
+    initViz(`eviz-${uuid}`, pron, at);
+  }
 }
 
 // 単語追加
 async function addWord() {
   const surface = document.getElementById('newSurface').value.trim();
   const pronunciation = document.getElementById('newPronunciation').value.trim();
-  const accentRaw = document.getElementById('newAccentType').value.trim();
   const wordType = document.getElementById('newWordType').value;
   const priority = parseInt(document.getElementById('newPriority').value) || 5;
+  const at = (_viz['addViz']?.accentType) ?? 0;
 
   if (!surface) { showDictStatus('表層形を入力してください', 'error'); return; }
   if (!pronunciation) { showDictStatus('読みを入力してください', 'error'); return; }
-  if (accentRaw === '' || isNaN(parseInt(accentRaw))) {
-    showDictStatus('アクセント型を入力してください（0 以上の整数）', 'error'); return;
-  }
 
   const btn = document.getElementById('addWordBtn');
   btn.disabled = true;
@@ -1374,7 +1404,7 @@ async function addWord() {
       body: JSON.stringify({
         surface: [surface],
         pronunciation: [pronunciation],
-        accent_type: [parseInt(accentRaw)],
+        accent_type: [at],
         word_type: wordType,
         priority,
       }),
@@ -1397,22 +1427,22 @@ async function addWord() {
 function clearAddForm() {
   document.getElementById('newSurface').value = '';
   document.getElementById('newPronunciation').value = '';
-  document.getElementById('newAccentType').value = '';
   document.getElementById('newWordType').value = 'PROPER_NOUN';
   document.getElementById('newPriority').value = '5';
   document.getElementById('dictStatus').className = 'status';
+  initViz('addViz', '', 0);
 }
 
 // 単語更新
 async function updateWord(uuid) {
   const surface = document.getElementById(`es-${uuid}`).value.trim();
   const pronunciation = document.getElementById(`ep-${uuid}`).value.trim();
-  const accentRaw = document.getElementById(`ea-${uuid}`).value.trim();
   const wordType = document.getElementById(`ew-${uuid}`).value;
   const priority = parseInt(document.getElementById(`epr-${uuid}`).value) || 5;
+  const at = (_viz[`eviz-${uuid}`]?.accentType) ?? 0;
 
-  if (!surface || !pronunciation || accentRaw === '') {
-    showDictStatus('表層形・読み・アクセント型は必須です', 'error'); return;
+  if (!surface || !pronunciation) {
+    showDictStatus('表層形・読みは必須です', 'error'); return;
   }
 
   const saveBtn = document.querySelector(`#wrow-${uuid} .edit-actions .btn-primary`);
@@ -1426,7 +1456,7 @@ async function updateWord(uuid) {
       body: JSON.stringify({
         surface: [surface],
         pronunciation: [pronunciation],
-        accent_type: [parseInt(accentRaw)],
+        accent_type: [at],
         word_type: wordType,
         priority,
       }),
@@ -1465,13 +1495,9 @@ async function confirmDelete() {
   const btn = document.getElementById('deleteConfirmBtn');
   btn.disabled = true;
   btn.textContent = '削除中...';
-
   try {
     const res = await fetch(`${API}/user_dict/${uuid}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     closeDeleteDialog();
     await loadDict();
     showDictStatus(`✓ 「${label}」を削除しました`, 'success');
@@ -1484,24 +1510,26 @@ async function confirmDelete() {
   }
 }
 
-// ダイアログ背景クリックで閉じる
 document.getElementById('deleteDialog').addEventListener('click', function(e) {
   if (e.target === this) closeDeleteDialog();
 });
 
-// Enter キーで追加フォームを送信
-['newSurface','newPronunciation','newAccentType'].forEach(id => {
+// Enter で追加
+['newSurface','newPronunciation'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => {
     if (e.key === 'Enter') addWord();
   });
 });
 
-// =====================
-// 初期化
-// =====================
+// ==========================================
+//  初期化
+// ==========================================
 loadSpeakers();
 loadModels();
 setInterval(loadModels, 30000);
+
+// 追加フォームのアクセントビジュアライザー初期化
+initViz('addViz', '', 0);
 </script>
 </body>
 </html>
