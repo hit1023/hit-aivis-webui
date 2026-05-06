@@ -710,6 +710,38 @@
 
   .dialog-actions { display: flex; gap: 0.7rem; justify-content: flex-end; }
 
+  /* Pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .pagination-info {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    min-width: 8rem;
+    text-align: center;
+  }
+
+  .pagination-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .pagination-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pagination-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
   /* Animations */
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
@@ -887,7 +919,7 @@
       </div>
 
       <div class="dict-search-wrap">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         <input type="text" class="dict-search" id="dictSearch"
                placeholder="表層形・読みで絞り込み..." oninput="filterDict()">
       </div>
@@ -945,13 +977,19 @@
       </div>
 
       <div class="dict-search-wrap">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         <input type="text" class="dict-search" id="repSearch"
                placeholder="置換前・後テキストで絞り込み..." oninput="filterReplacements()">
       </div>
 
       <div class="dict-list" id="repList">
         <div class="dict-empty">読み込み中...</div>
+      </div>
+
+      <div class="pagination" id="repPagination" style="display:none">
+        <button class="pagination-btn" id="repPrevBtn" onclick="repPageMove(-1)">← 前へ</button>
+        <span class="pagination-info" id="repPageInfo"></span>
+        <button class="pagination-btn" id="repNextBtn" onclick="repPageMove(1)">次へ →</button>
       </div>
     </div>
 
@@ -1595,6 +1633,8 @@ document.getElementById('deleteDialog').addEventListener('click', function(e) {
 // ==========================================
 let _repData = {};
 let _repSearch = '';
+let _repPage = 0;
+const _REP_PER_PAGE = 50;
 
 function showRepStatus(msg, type) {
   const el = document.getElementById('repStatus');
@@ -1623,6 +1663,7 @@ async function loadReplacements() {
 
 function renderReplacements() {
   const list = document.getElementById('repList');
+  const pagination = document.getElementById('repPagination');
   const q = _repSearch.trim().toLowerCase();
 
   let entries = Object.entries(_repData);
@@ -1632,14 +1673,23 @@ function renderReplacements() {
     );
   }
 
-  document.getElementById('repCount').textContent = `${entries.length} 件`;
+  const total = entries.length;
+  document.getElementById('repCount').textContent = `${total} 件`;
 
-  if (!entries.length) {
+  if (!total) {
     list.innerHTML = `<div class="dict-empty">${q ? '一致するルールが見つかりません' : '登録されたルールはありません'}</div>`;
+    pagination.style.display = 'none';
     return;
   }
 
-  list.innerHTML = entries.map(([src, dst]) => `
+  const totalPages = Math.ceil(total / _REP_PER_PAGE);
+  if (_repPage >= totalPages) _repPage = totalPages - 1;
+
+  const start = _repPage * _REP_PER_PAGE;
+  const end = Math.min(start + _REP_PER_PAGE, total);
+  const pageEntries = entries.slice(start, end);
+
+  list.innerHTML = pageEntries.map(([src, dst]) => `
     <div class="word-row">
       <div class="word-row-main">
         <div style="display:flex;align-items:center;gap:0.8rem;flex:1;flex-wrap:wrap">
@@ -1652,10 +1702,28 @@ function renderReplacements() {
         </div>
       </div>
     </div>`).join('');
+
+  // ページネーション表示
+  if (totalPages <= 1) {
+    pagination.style.display = 'none';
+  } else {
+    pagination.style.display = 'flex';
+    document.getElementById('repPageInfo').textContent =
+      `${start + 1}〜${end} / ${total} 件（${_repPage + 1} / ${totalPages} ページ）`;
+    document.getElementById('repPrevBtn').disabled = _repPage === 0;
+    document.getElementById('repNextBtn').disabled = _repPage >= totalPages - 1;
+  }
+}
+
+function repPageMove(delta) {
+  _repPage += delta;
+  renderReplacements();
+  document.getElementById('repList').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function filterReplacements() {
   _repSearch = document.getElementById('repSearch').value;
+  _repPage = 0;
   renderReplacements();
 }
 
