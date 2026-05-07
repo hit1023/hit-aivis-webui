@@ -461,6 +461,14 @@
   .unload-btn:hover { background: rgba(255,79,106,0.1); border-color: var(--error); }
   .unload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  .model-styles { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
+  .style-chip {
+    font-size: 0.68rem; font-family: monospace;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 0.1rem 0.4rem; color: var(--text-muted);
+  }
+  .style-chip span { color: var(--accent); font-weight: 600; }
+
   .vram-empty { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 1.5rem 0; }
   .last-updated { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 0.8rem; }
 
@@ -1194,15 +1202,43 @@ async function loadModels() {
   btn.disabled = true;
   icon.style.animation = 'spin 0.8s linear infinite';
   try {
-    const res = await fetch(`${API}/models`);
-    const models = await res.json();
+    const [modelsRes, speakersRes] = await Promise.all([
+      fetch(`${API}/models`),
+      fetch(`${API}/speakers`),
+    ]);
+    const models = await modelsRes.json();
+    const speakers = await speakersRes.json();
+
+    // スピーカー名 → スタイル一覧 のマップを作成
+    const styleMap = {};
+    for (const sp of speakers) {
+      styleMap[sp.name] = sp.styles.map(st => ({ id: st.id, name: st.name }));
+    }
+
     const list = document.getElementById('modelList');
     if (!models.length) { list.innerHTML = '<div class="vram-empty">モデルが見つかりません</div>'; return; }
-    list.innerHTML = models.map(m => `
+
+    // 同一モデルが複数バックエンドに存在する場合は1件だけ表示（IDは共通なので）
+    const seen = new Set();
+    const uniqueModels = models.filter(m => {
+      if (seen.has(m.aivm_uuid)) return false;
+      seen.add(m.aivm_uuid);
+      return true;
+    });
+
+    list.innerHTML = uniqueModels.map(m => {
+      const stylesHtml = m.speakers.map(sp => {
+        const styles = styleMap[sp.name] || [];
+        return styles.map(st =>
+          `<div class="style-chip">${sp.name} / ${st.name} &nbsp; <span>ID: ${st.id}</span></div>`
+        ).join('');
+      }).join('');
+      return `
       <div class="model-row ${m.is_loaded ? 'loaded' : ''}">
         <div class="model-info">
           <div class="model-name">${m.model_name}</div>
-          <div class="model-backend">${m.speakers.map(s=>s.name).join(' · ')} &nbsp;·&nbsp; ${m.backend_url.replace('https://','')}</div>
+          <div class="model-backend">${m.backend_url.replace('https://','')}</div>
+          <div class="model-styles">${stylesHtml}</div>
         </div>
         <div class="model-row-right">
           <div class="vram-badge ${m.is_loaded ? 'on' : 'off'}">
@@ -1211,7 +1247,8 @@ async function loadModels() {
           </div>
           ${m.is_loaded ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')">⏏ 解放</button>` : ''}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     document.getElementById('lastUpdated').textContent = `最終更新: ${new Date().toLocaleTimeString('ja-JP')}`;
   } catch(e) {
     document.getElementById('modelList').innerHTML = '<div class="vram-empty">取得に失敗しました</div>';
