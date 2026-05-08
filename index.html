@@ -796,34 +796,48 @@
   .pagination-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
   .pagination-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-  /* APIパラメータプレビュー */
+  /* APIサンプル */
   .api-preview {
     margin-top: 1rem;
-    background: var(--surface2);
+    background: #0a0f1e;
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 0.8rem 1rem;
+    overflow: hidden;
+  }
+  .api-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
   }
   .api-preview-title {
     font-size: 0.7rem;
     color: var(--text-muted);
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    margin-bottom: 0.6rem;
   }
-  .api-preview-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.3rem 1.5rem;
+  .api-copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
   }
-  .api-preview-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .api-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .api-preview-code {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    font-family: monospace;
     font-size: 0.78rem;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre;
+    overflow-x: auto;
   }
-  .api-preview-key { color: var(--text-muted); font-family: monospace; }
-  .api-preview-val { color: var(--accent); font-family: monospace; font-weight: 600; }
 
   /* Animations */
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
@@ -894,25 +908,11 @@
         </div>
       </div>
       <div class="api-preview">
-        <div class="api-preview-title">AivisSpeech audio_query パラメータ</div>
-        <div class="api-preview-grid">
-          <div class="api-preview-row">
-            <span class="api-preview-key">speedScale</span>
-            <span class="api-preview-val" id="prev-speed">1.0</span>
-          </div>
-          <div class="api-preview-row">
-            <span class="api-preview-key">pitchScale</span>
-            <span class="api-preview-val" id="prev-pitch">0.00</span>
-          </div>
-          <div class="api-preview-row">
-            <span class="api-preview-key">intonationScale</span>
-            <span class="api-preview-val" id="prev-intonation">1.0</span>
-          </div>
-          <div class="api-preview-row">
-            <span class="api-preview-key">volumeScale</span>
-            <span class="api-preview-val" id="prev-volume">1.0</span>
-          </div>
+        <div class="api-preview-header">
+          <div class="api-preview-title">API サンプル</div>
+          <button class="api-copy-btn" onclick="copyApiSample()" title="コピー">📋 コピー</button>
         </div>
+        <pre class="api-preview-code" id="apiSampleCode"></pre>
       </div>
       <button class="btn-speak" id="speakBtn" onclick="speak()">
         <span class="btn-text">🎵 音声を生成</span>
@@ -1170,6 +1170,8 @@ async function loadSpeakers() {
       sel.appendChild(opt);
     }));
     document.getElementById('apiStatus').textContent = `${speakers.length} スピーカー接続済み`;
+    document.getElementById('speakerSelect').addEventListener('change', updateApiSample);
+    updateApiSample();
   } catch(e) {
     document.getElementById('apiStatus').textContent = '接続失敗';
     const dot = document.getElementById('apiDot');
@@ -1178,17 +1180,48 @@ async function loadSpeakers() {
   }
 }
 
+function updateApiSample() {
+  const text = document.getElementById('textInput').value || 'こんにちは';
+  const speakerId = document.getElementById('speakerSelect').value || '0';
+  const speed = parseFloat(document.getElementById('speed').value).toFixed(1);
+  const pitch = parseFloat(document.getElementById('pitch').value).toFixed(2);
+  const intonation = parseFloat(document.getElementById('intonation').value).toFixed(1);
+  const volume = parseFloat(document.getElementById('volume').value).toFixed(1);
+  const escaped = text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  document.getElementById('apiSampleCode').textContent =
+`curl -X POST ${API}/speak \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "text": "${escaped}",
+    "speaker_id": ${speakerId},
+    "speed": ${speed},
+    "pitch": ${pitch},
+    "intonation": ${intonation},
+    "volume": ${volume}
+  }'`;
+}
+
+function copyApiSample() {
+  const code = document.getElementById('apiSampleCode').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('.api-copy-btn');
+    btn.textContent = '✓ コピー済み';
+    setTimeout(() => btn.textContent = '📋 コピー', 1500);
+  });
+}
+
 ['speed','pitch','intonation','volume'].forEach(id => {
   document.getElementById(id).addEventListener('input', function() {
     const decimals = id === 'pitch' ? 2 : 1;
     const val = parseFloat(this.value).toFixed(decimals);
     document.getElementById(id + 'Val').textContent = val;
-    document.getElementById('prev-' + id).textContent = val;
+    updateApiSample();
   });
 });
 
 document.getElementById('textInput').addEventListener('input', function() {
   document.getElementById('charCount').textContent = this.value.length;
+  updateApiSample();
 });
 
 async function speak() {
