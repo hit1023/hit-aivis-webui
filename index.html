@@ -539,14 +539,13 @@
   /* ========================
      スピーカープリセット
      ======================== */
-  .preset-bar {
+  .param-card-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.6rem;
-    min-height: 1.8rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
   }
-  .preset-active-badge {
+  .preset-active-header-badge {
     display: flex;
     align-items: center;
     gap: 0.35rem;
@@ -554,31 +553,58 @@
     color: var(--success);
     background: rgba(34,211,160,0.1);
     border: 1px solid rgba(34,211,160,0.3);
-    border-radius: 6px;
-    padding: 0.2rem 0.55rem;
+    border-radius: 20px;
+    padding: 0.2rem 0.7rem;
+    animation: fadeUp 0.3s ease both;
   }
-  .preset-active-badge::before { content: '✓'; font-weight: 700; }
+  .preset-active-header-badge::before { content: '✓'; font-weight: 700; }
+  .preset-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+  .preset-action-bar:empty { display: none; }
   .preset-save-btn {
+    flex: 1;
     background: none;
-    border: 1px solid rgba(79,142,255,0.3);
-    border-radius: 6px;
+    border: 1px solid rgba(79,142,255,0.35);
+    border-radius: 8px;
     color: var(--accent);
-    font-size: 0.72rem;
-    padding: 0.2rem 0.6rem;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem;
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s;
+    text-align: center;
   }
   .preset-save-btn:hover { background: rgba(79,142,255,0.08); border-color: var(--accent); }
   .preset-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .preset-update-btn {
+    flex: 1;
+    background: none;
+    border: 1px solid rgba(34,211,160,0.35);
+    border-radius: 8px;
+    color: var(--success);
+    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    text-align: center;
+  }
+  .preset-update-btn:hover { background: rgba(34,211,160,0.08); border-color: var(--success); }
+  .preset-update-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .preset-del-btn {
     background: none;
-    border: 1px solid rgba(255,79,106,0.2);
-    border-radius: 6px;
+    border: 1px solid rgba(255,79,106,0.25);
+    border-radius: 8px;
     color: rgba(255,79,106,0.7);
-    font-size: 0.68rem;
-    padding: 0.2rem 0.5rem;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.7rem;
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s, color 0.2s;
+    white-space: nowrap;
   }
   .preset-del-btn:hover { background: rgba(255,79,106,0.08); border-color: var(--error); color: var(--error); }
 
@@ -936,7 +962,6 @@
         <select id="speakerSelect"><option value="">読み込み中...</option></select>
         <span class="select-arrow">▾</span>
       </div>
-      <div class="preset-bar" id="presetBar"></div>
       <div class="api-indicator">
         <div class="api-dot" id="apiDot"></div>
         <span id="apiStatus">接続中...</span>
@@ -950,7 +975,10 @@
     </div>
 
     <div class="card">
-      <div class="card-title">パラメータ</div>
+      <div class="param-card-header">
+        <div class="card-title" style="margin-bottom:0">パラメータ</div>
+        <div id="presetActiveBadge"></div>
+      </div>
       <div class="params-grid">
         <div class="param-item">
           <label>話速 <span id="speedVal">1.0</span></label>
@@ -977,6 +1005,7 @@
           <input type="range" id="pauseLengthScale" min="0.0" max="2.0" step="0.05" value="1.0">
         </div>
       </div>
+      <div class="preset-action-bar" id="presetBar"></div>
       <div class="api-preview">
         <div class="api-preview-header">
           <div class="api-preview-title">API サンプル</div>
@@ -1249,14 +1278,28 @@ async function loadPresets() {
 
 function updatePresetBar() {
   const bar = document.getElementById('presetBar');
-  const speakerId = document.getElementById('speakerSelect').value;
-  if (!speakerId) { bar.innerHTML = ''; return; }
+  const badge = document.getElementById('presetActiveBadge');
+  const speakerSel = document.getElementById('speakerSelect');
+  const speakerId = speakerSel.value;
+  const speakerName = speakerSel.options[speakerSel.selectedIndex]?.text || '';
+
+  if (!speakerId) {
+    bar.innerHTML = '';
+    badge.innerHTML = '';
+    return;
+  }
+
   const p = _presets[speakerId];
   if (p) {
+    // ヘッダーバッジ：プリセット適用中
+    badge.innerHTML = `<span class="preset-active-header-badge">プリセット適用中</span>`;
+    // アクションバー：上書き保存 + 削除
     bar.innerHTML =
-      `<span class="preset-active-badge">プリセット適用中</span>` +
-      `<button class="preset-del-btn" onclick="deletePreset()">削除</button>`;
+      `<button class="preset-update-btn" id="presetSaveBtn" onclick="savePreset()">💾 プリセットを上書き保存</button>` +
+      `<button class="preset-del-btn" onclick="deletePreset()">🗑 削除</button>`;
   } else {
+    badge.innerHTML = '';
+    // アクションバー：新規保存
     bar.innerHTML =
       `<button class="preset-save-btn" id="presetSaveBtn" onclick="savePreset()">💾 現在のパラメータをプリセット保存</button>`;
   }
