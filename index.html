@@ -461,6 +461,21 @@
   .unload-btn:hover { background: rgba(255,79,106,0.1); border-color: var(--error); }
   .unload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  .uninstall-btn {
+    background: none;
+    border: 1px solid rgba(255,79,106,0.2);
+    border-radius: 6px;
+    color: rgba(255,79,106,0.6);
+    font-size: 0.72rem;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    margin-left: 0.25rem;
+    white-space: nowrap;
+  }
+  .uninstall-btn:hover { background: rgba(255,79,106,0.08); border-color: var(--error); color: var(--error); }
+  .uninstall-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
   .model-styles { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
   .style-chip {
     font-size: 0.68rem; font-family: monospace;
@@ -1345,6 +1360,7 @@ async function loadModels() {
             ${m.is_loaded ? 'VRAM ロード中' : 'アンロード'}
           </div>
           ${m.is_loaded ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')">⏏ 解放</button>` : ''}
+          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')">🗑 削除</button>
         </div>
       </div>`;
     }).join('');
@@ -1447,6 +1463,22 @@ async function unloadModel(uuid, name) {
     btn.disabled = false;
     btn.textContent = '⏏ 解放';
     showTtsStatus(`エラー: ${name} の解放に失敗しました`, 'error');
+  }
+}
+
+async function uninstallModel(uuid, name) {
+  if (!confirm(`「${name}」をアンインストールします。\nこの操作は取り消せません。よろしいですか？`)) return;
+  const btn = document.getElementById(`uninst-${uuid}`);
+  if (btn) { btn.disabled = true; btn.textContent = '削除中...'; }
+  try {
+    const res = await fetch(`${API}/models/${uuid}/uninstall`, { method: 'DELETE' });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.detail || 'アンインストール失敗');
+    await loadModels();
+    showTtsStatus(`✓ ${name} をアンインストールしました`, 'success');
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '🗑 削除'; }
+    showTtsStatus(`エラー: ${e.message}`, 'error');
   }
 }
 
