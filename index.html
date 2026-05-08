@@ -537,6 +537,52 @@
   .api-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px var(--success); }
 
   /* ========================
+     スピーカープリセット
+     ======================== */
+  .preset-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+    min-height: 1.8rem;
+  }
+  .preset-active-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: var(--success);
+    background: rgba(34,211,160,0.1);
+    border: 1px solid rgba(34,211,160,0.3);
+    border-radius: 6px;
+    padding: 0.2rem 0.55rem;
+  }
+  .preset-active-badge::before { content: '✓'; font-weight: 700; }
+  .preset-save-btn {
+    background: none;
+    border: 1px solid rgba(79,142,255,0.3);
+    border-radius: 6px;
+    color: var(--accent);
+    font-size: 0.72rem;
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .preset-save-btn:hover { background: rgba(79,142,255,0.08); border-color: var(--accent); }
+  .preset-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .preset-del-btn {
+    background: none;
+    border: 1px solid rgba(255,79,106,0.2);
+    border-radius: 6px;
+    color: rgba(255,79,106,0.7);
+    font-size: 0.68rem;
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .preset-del-btn:hover { background: rgba(255,79,106,0.08); border-color: var(--error); color: var(--error); }
+
+  /* ========================
      単語辞書
      ======================== */
   .dict-form-grid {
@@ -890,6 +936,7 @@
         <select id="speakerSelect"><option value="">読み込み中...</option></select>
         <span class="select-arrow">▾</span>
       </div>
+      <div class="preset-bar" id="presetBar"></div>
       <div class="api-indicator">
         <div class="api-dot" id="apiDot"></div>
         <span id="apiStatus">接続中...</span>
@@ -1180,10 +1227,112 @@ function switchTab(tab) {
 // ==========================================
 //  音声合成
 // ==========================================
+// ==========================================
+//  スピーカープリセット
+// ==========================================
+
+let _presets = {};  // { "855257952": { speed, pitch, ... } }
+
+async function loadPresets() {
+  try {
+    const res = await fetch(`${API}/speaker_presets`);
+    if (res.ok) _presets = await res.json();
+  } catch(e) { /* プリセット取得失敗は無視 */ }
+}
+
+function updatePresetBar() {
+  const bar = document.getElementById('presetBar');
+  const speakerId = document.getElementById('speakerSelect').value;
+  if (!speakerId) { bar.innerHTML = ''; return; }
+  const p = _presets[speakerId];
+  if (p) {
+    bar.innerHTML =
+      `<span class="preset-active-badge">プリセット適用中</span>` +
+      `<button class="preset-del-btn" onclick="deletePreset()">削除</button>`;
+  } else {
+    bar.innerHTML =
+      `<button class="preset-save-btn" id="presetSaveBtn" onclick="savePreset()">💾 現在のパラメータをプリセット保存</button>`;
+  }
+}
+
+function applyPreset(p) {
+  const map = {
+    speed: { id: 'speed', dec: 1 },
+    pitch: { id: 'pitch', dec: 2 },
+    intonation: { id: 'intonation', dec: 1 },
+    volume: { id: 'volume', dec: 1 },
+    tempo_dynamics: { id: 'tempoDynamics', dec: 1 },
+    pause_length_scale: { id: 'pauseLengthScale', dec: 1 },
+  };
+  for (const [key, { id, dec }] of Object.entries(map)) {
+    if (p[key] !== undefined) {
+      const el = document.getElementById(id);
+      el.value = p[key];
+      document.getElementById(id + 'Val').textContent = parseFloat(p[key]).toFixed(dec);
+    }
+  }
+  updateApiSample();
+}
+
+function onSpeakerChange() {
+  const speakerId = document.getElementById('speakerSelect').value;
+  const p = _presets[speakerId];
+  if (p) applyPreset(p);
+  updatePresetBar();
+  updateApiSample();
+}
+
+async function savePreset() {
+  const speakerId = document.getElementById('speakerSelect').value;
+  if (!speakerId) return;
+  const btn = document.getElementById('presetSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
+  const body = {
+    speed: parseFloat(document.getElementById('speed').value),
+    pitch: parseFloat(document.getElementById('pitch').value),
+    intonation: parseFloat(document.getElementById('intonation').value),
+    volume: parseFloat(document.getElementById('volume').value),
+    tempo_dynamics: parseFloat(document.getElementById('tempoDynamics').value),
+    pause_length: null,
+    pause_length_scale: parseFloat(document.getElementById('pauseLengthScale').value),
+  };
+  try {
+    const res = await fetch(`${API}/speaker_presets/${speakerId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('保存失敗');
+    _presets[speakerId] = body;
+    updatePresetBar();
+    showTtsStatus('✓ プリセットを保存しました', 'success');
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 現在のパラメータをプリセット保存'; }
+    showTtsStatus('プリセットの保存に失敗しました', 'error');
+  }
+}
+
+async function deletePreset() {
+  const speakerId = document.getElementById('speakerSelect').value;
+  if (!speakerId) return;
+  try {
+    const res = await fetch(`${API}/speaker_presets/${speakerId}`, { method: 'DELETE' });
+    if (!res.ok && res.status !== 404) throw new Error('削除失敗');
+    delete _presets[speakerId];
+    updatePresetBar();
+    showTtsStatus('プリセットを削除しました', 'success');
+  } catch(e) {
+    showTtsStatus('プリセットの削除に失敗しました', 'error');
+  }
+}
+
 async function loadSpeakers() {
   try {
-    const res = await fetch(`${API}/speakers`);
-    const speakers = await res.json();
+    const [speakersRes] = await Promise.all([
+      fetch(`${API}/speakers`),
+      loadPresets(),
+    ]);
+    const speakers = await speakersRes.json();
     const sel = document.getElementById('speakerSelect');
     sel.innerHTML = '';
     speakers.forEach(sp => sp.styles.forEach(st => {
@@ -1193,7 +1342,11 @@ async function loadSpeakers() {
       sel.appendChild(opt);
     }));
     document.getElementById('apiStatus').textContent = `${speakers.length} スピーカー接続済み`;
-    document.getElementById('speakerSelect').addEventListener('change', updateApiSample);
+    sel.addEventListener('change', onSpeakerChange);
+    // 初期スピーカーにプリセットがあれば適用
+    const initialPreset = _presets[sel.value];
+    if (initialPreset) applyPreset(initialPreset);
+    updatePresetBar();
     updateApiSample();
   } catch(e) {
     document.getElementById('apiStatus').textContent = '接続失敗';
