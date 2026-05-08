@@ -1331,6 +1331,28 @@ const WORD_TYPE_LABELS = {
   COMMON_NOUN: '普通名詞', VERB: '動詞', ADJECTIVE: '形容詞', SUFFIX: '語尾',
 };
 
+// エンジンのレスポンス（part_of_speech_detail）から品詞ラベルを解決
+function resolveWordTypeLabel(w) {
+  if (w.word_type) return WORD_TYPE_LABELS[w.word_type] || w.word_type;
+  const d1 = w.part_of_speech_detail_1 || '';
+  const d2 = w.part_of_speech_detail_2 || '';
+  const d3 = w.part_of_speech_detail_3 || '';
+  const pos = w.part_of_speech || '';
+  if (d1 === '固有名詞') {
+    if (d2 === '人名') {
+      if (d3 === '姓') return '人名（姓）';
+      if (d3 === '名') return '人名（名）';
+      return '人名';
+    }
+    if (d2 === '地域') return '地名';
+    if (d2 === '組織') return '組織・施設名';
+    return '固有名詞';
+  }
+  if (pos === '動詞') return '動詞';
+  if (pos === '形容詞') return '形容詞';
+  return '固有名詞';
+}
+
 // ==========================================
 //  タブ
 // ==========================================
@@ -2099,7 +2121,7 @@ function renderDict() {
     const pron = Array.isArray(w.pronunciation) ? w.pronunciation.join('') : (w.pronunciation || '—');
     const at = Array.isArray(w.accent_type) ? w.accent_type[0] : (w.accent_type ?? 0);
     const wordType = w.word_type || 'PROPER_NOUN';
-    const label = WORD_TYPE_LABELS[wordType] || wordType;
+    const label = resolveWordTypeLabel(w);
     const priority = w.priority ?? 5;
 
     return `
