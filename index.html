@@ -230,6 +230,82 @@
     font-family: 'Syne', sans-serif;
   }
 
+  .param-en {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    opacity: 0.55;
+    font-family: 'Syne', sans-serif;
+    font-weight: 400;
+    margin-left: 0.25rem;
+  }
+
+  .param-desc {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    opacity: 0.5;
+    margin-top: 0.3rem;
+  }
+
+  /* ========================
+     旧パラメータ変換
+     ======================== */
+  .legacy-convert {
+    background: rgba(79,142,255,0.04);
+    border: 1px dashed rgba(79,142,255,0.2);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .legacy-convert-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .legacy-convert-label::before { content: '🔄'; font-size: 0.8rem; }
+  .legacy-convert-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .legacy-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-size: 0.75rem;
+    padding: 0.4rem 0.7rem;
+    font-family: monospace;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .legacy-input:focus { border-color: var(--accent); }
+  .legacy-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+  .legacy-convert-btn {
+    background: rgba(79,142,255,0.15);
+    border: 1px solid rgba(79,142,255,0.35);
+    border-radius: 7px;
+    color: var(--accent);
+    font-size: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .legacy-convert-btn:hover { background: rgba(79,142,255,0.25); }
+  .convert-note {
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    display: none;
+  }
+  .convert-note.visible { display: block; }
+  .convert-note .mapped { color: var(--success); }
+  .convert-note .skipped { color: var(--text-muted); opacity: 0.6; }
+
   input[type="range"] {
     width: 100%;
     height: 4px;
@@ -979,30 +1055,46 @@
         <div class="card-title" style="margin-bottom:0">パラメータ</div>
         <div id="presetActiveBadge"></div>
       </div>
+      <div class="legacy-convert">
+        <div class="legacy-convert-label">旧パラメータを変換して適用</div>
+        <div class="legacy-convert-row">
+          <input type="text" id="legacyParams" class="legacy-input"
+            placeholder="style_weight=1&amp;length=1&amp;noise=0.6&amp;noisew=0.8&amp;sdp_ratio=0.2">
+          <button class="legacy-convert-btn" onclick="convertLegacyParams()">変換</button>
+        </div>
+        <div class="convert-note" id="convertNote"></div>
+      </div>
+
       <div class="params-grid">
         <div class="param-item">
-          <label>話速 <span id="speedVal">1.0</span></label>
+          <label>話速<span class="param-en">speed</span><span id="speedVal">1.0</span></label>
           <input type="range" id="speed" min="0.5" max="2.0" step="0.05" value="1.0">
+          <div class="param-desc">話す速さ（大きいほど速い）</div>
         </div>
         <div class="param-item">
-          <label>音高 <span id="pitchVal">0.00</span></label>
+          <label>音高<span class="param-en">pitch</span><span id="pitchVal">0.00</span></label>
           <input type="range" id="pitch" min="-0.15" max="0.15" step="0.01" value="0.0">
+          <div class="param-desc">声の高さ（0.0=標準、+で高く −で低く）</div>
         </div>
         <div class="param-item">
-          <label>抑揚 <span id="intonationVal">1.0</span></label>
+          <label>抑揚<span class="param-en">intonation</span><span id="intonationVal">1.0</span></label>
           <input type="range" id="intonation" min="0.0" max="2.0" step="0.05" value="1.0">
+          <div class="param-desc">イントネーション（小さいほど棒読み）</div>
         </div>
         <div class="param-item">
-          <label>音量 <span id="volumeVal">1.0</span></label>
+          <label>音量<span class="param-en">volume</span><span id="volumeVal">1.0</span></label>
           <input type="range" id="volume" min="0.0" max="2.0" step="0.05" value="1.0">
+          <div class="param-desc">音の大きさ（1.0=標準）</div>
         </div>
         <div class="param-item">
-          <label>緩急 <span id="tempoDynamicsVal">1.0</span></label>
+          <label>緩急<span class="param-en">tempo_dynamics</span><span id="tempoDynamicsVal">1.0</span></label>
           <input type="range" id="tempoDynamics" min="0.0" max="2.0" step="0.05" value="1.0">
+          <div class="param-desc">テンポの強弱変化（1.0=標準）</div>
         </div>
         <div class="param-item">
-          <label>無音倍率 <span id="pauseLengthScaleVal">1.0</span></label>
+          <label>無音倍率<span class="param-en">pause_length_scale</span><span id="pauseLengthScaleVal">1.0</span></label>
           <input type="range" id="pauseLengthScale" min="0.0" max="2.0" step="0.05" value="1.0">
+          <div class="param-desc">句読点の無音区間の長さ（大きいほど間が長い）</div>
         </div>
       </div>
       <div class="preset-action-bar" id="presetBar"></div>
@@ -1325,6 +1417,73 @@ function applyPreset(p) {
     valEl.textContent = parseFloat(p[key]).toFixed(dec);
   }
   updateApiSample();
+}
+
+function convertLegacyParams() {
+  const raw = document.getElementById('legacyParams').value.trim();
+  const noteEl = document.getElementById('convertNote');
+  if (!raw) { noteEl.className = 'convert-note'; return; }
+
+  // パース
+  const params = {};
+  raw.split('&').forEach(pair => {
+    const [k, v] = pair.split('=');
+    if (k && v !== undefined) params[k.trim()] = parseFloat(v.trim());
+  });
+
+  const lines = [];
+
+  // length → speed（直接対応）
+  if ('length' in params) {
+    const v = Math.min(Math.max(params.length, 0.5), 2.0);
+    setSlider('speed', 'speedVal', v, 1);
+    lines.push(`<span class="mapped">✓ length=${params.length} → 話速(speed)=${v.toFixed(1)}</span>`);
+  }
+
+  // noise → intonation（近似）
+  if ('noise' in params) {
+    const v = Math.min(Math.max(params.noise, 0.0), 2.0);
+    setSlider('intonation', 'intonationVal', v, 1);
+    lines.push(`<span class="mapped">✓ noise=${params.noise} → 抑揚(intonation)=${v.toFixed(1)} <em>(近似)</em></span>`);
+  }
+
+  // noisew → pause_length_scale（近似）
+  if ('noisew' in params) {
+    const v = Math.min(Math.max(params.noisew, 0.0), 2.0);
+    setSlider('pauseLengthScale', 'pauseLengthScaleVal', v, 1);
+    lines.push(`<span class="mapped">✓ noisew=${params.noisew} → 無音倍率(pause_length_scale)=${v.toFixed(1)} <em>(近似)</em></span>`);
+  }
+
+  // sdp_ratio → tempo_dynamics（近似: 0〜1 → 0.5〜1.5 にスケール）
+  if ('sdp_ratio' in params) {
+    const v = Math.min(Math.max(0.5 + params.sdp_ratio, 0.0), 2.0);
+    setSlider('tempoDynamics', 'tempoDynamicsVal', v, 1);
+    lines.push(`<span class="mapped">✓ sdp_ratio=${params.sdp_ratio} → 緩急(tempo_dynamics)=${v.toFixed(1)} <em>(近似)</em></span>`);
+  }
+
+  // 対応なし
+  ['style_weight', 'assist_text_weight'].forEach(k => {
+    if (k in params) {
+      lines.push(`<span class="skipped">− ${k}=${params[k]} → 対応パラメータなし（スキップ）</span>`);
+    }
+  });
+
+  if (lines.length === 0) {
+    noteEl.innerHTML = '<span class="skipped">認識できるパラメータが見つかりませんでした</span>';
+  } else {
+    noteEl.innerHTML = lines.join('<br>');
+    updateApiSample();
+    updatePresetBar();
+  }
+  noteEl.className = 'convert-note visible';
+}
+
+function setSlider(id, valId, value, dec) {
+  const el = document.getElementById(id);
+  const valEl = document.getElementById(valId);
+  if (!el || !valEl) return;
+  el.value = value;
+  valEl.textContent = value.toFixed(dec);
 }
 
 function resetParams() {
