@@ -906,6 +906,14 @@
           <label>音量 <span id="volumeVal">1.0</span></label>
           <input type="range" id="volume" min="0.0" max="2.0" step="0.05" value="1.0">
         </div>
+        <div class="param-item">
+          <label>緩急 <span id="tempoDynamicsVal">1.0</span></label>
+          <input type="range" id="tempoDynamics" min="0.0" max="2.0" step="0.05" value="1.0">
+        </div>
+        <div class="param-item">
+          <label>無音倍率 <span id="pauseLengthScaleVal">1.0</span></label>
+          <input type="range" id="pauseLengthScale" min="0.0" max="2.0" step="0.05" value="1.0">
+        </div>
       </div>
       <div class="api-preview">
         <div class="api-preview-header">
@@ -1187,6 +1195,8 @@ function updateApiSample() {
   const pitch = parseFloat(document.getElementById('pitch').value).toFixed(2);
   const intonation = parseFloat(document.getElementById('intonation').value).toFixed(1);
   const volume = parseFloat(document.getElementById('volume').value).toFixed(1);
+  const tempoDynamics = parseFloat(document.getElementById('tempoDynamics').value).toFixed(1);
+  const pauseLengthScale = parseFloat(document.getElementById('pauseLengthScale').value).toFixed(1);
   const escaped = text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   document.getElementById('apiSampleCode').textContent =
 `curl -X POST ${API}/speak \\
@@ -1197,7 +1207,9 @@ function updateApiSample() {
     "speed": ${speed},
     "pitch": ${pitch},
     "intonation": ${intonation},
-    "volume": ${volume}
+    "volume": ${volume},
+    "tempo_dynamics": ${tempoDynamics},
+    "pause_length_scale": ${pauseLengthScale}
   }'`;
 }
 
@@ -1210,7 +1222,7 @@ function copyApiSample() {
   });
 }
 
-['speed','pitch','intonation','volume'].forEach(id => {
+['speed','pitch','intonation','volume','tempoDynamics','pauseLengthScale'].forEach(id => {
   document.getElementById(id).addEventListener('input', function() {
     const decimals = id === 'pitch' ? 2 : 1;
     const val = parseFloat(this.value).toFixed(decimals);
@@ -1247,6 +1259,8 @@ async function speak() {
         pitch: parseFloat(document.getElementById('pitch').value),
         intonation: parseFloat(document.getElementById('intonation').value),
         volume: parseFloat(document.getElementById('volume').value),
+        tempo_dynamics: parseFloat(document.getElementById('tempoDynamics').value),
+        pause_length_scale: parseFloat(document.getElementById('pauseLengthScale').value),
       })
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '生成に失敗しました'); }
