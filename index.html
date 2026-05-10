@@ -763,6 +763,20 @@
 
   .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
 
+  .btn-play {
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .btn-play:hover { border-color: #22c55e; color: #22c55e; }
+  .btn-play:disabled { opacity: 0.4; cursor: not-allowed; }
+
   .word-edit-form {
     display: none;
     padding: 1rem;
@@ -2126,6 +2140,7 @@ function renderDict() {
   const q = _dictSearch.trim().toLowerCase();
 
   let entries = Object.entries(_dictData);
+  if (entries.length > 0) console.debug('[Dict] sample word data:', JSON.stringify(entries[0][1], null, 2));
   if (q) {
     entries = entries.filter(([, w]) => {
       const s = (w.surface || '').toLowerCase();
@@ -2163,6 +2178,7 @@ function renderDict() {
           <span class="word-priority">優先度 ${priority}</span>
         </div>
         <div class="word-actions">
+          <button class="btn-play" onclick="playWord('${esc(surface)}', this)">▶ 再生</button>
           <button class="btn-edit" onclick="toggleEdit('${uuid}')">✏ 編集</button>
           <button class="btn-danger" onclick="openDeleteDialog('${uuid}','${esc(surface)}')">🗑</button>
         </div>
@@ -2325,6 +2341,35 @@ async function updateWord(uuid) {
 
 // 単語削除
 let _deleteUuid = null;
+
+let _playAudio = null;
+
+async function playWord(text, btn) {
+  const speakerId = parseInt(document.getElementById('speakerSelect').value);
+  if (!speakerId && speakerId !== 0) {
+    showDictStatus('TTSタブでスピーカーを選択してください', 'error');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const res = await fetch(`${API}/speak`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, speaker_id: speakerId }),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '生成に失敗'); }
+    const blob = await res.blob();
+    if (_playAudio) { _playAudio.pause(); _playAudio = null; }
+    _playAudio = new Audio(URL.createObjectURL(blob));
+    _playAudio.play();
+    _playAudio.onended = () => { btn.disabled = false; btn.textContent = '▶ 再生'; };
+  } catch(e) {
+    showDictStatus(`再生エラー: ${e.message}`, 'error');
+    btn.disabled = false;
+    btn.textContent = '▶ 再生';
+  }
+}
 
 function openDeleteDialog(uuid, surface) {
   _deleteUuid = uuid;
