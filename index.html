@@ -1773,8 +1773,7 @@ async function fetchAndRenderAccent(text, speakerId) {
       return;
     }
     const data = await res.json();
-    console.log('[accent] accentPhrases:', data.accentPhrases);
-    renderAccentPhrases(data.accentPhrases || []);
+    renderAccentPhrases(data.accent_phrases || data.accentPhrases || []);
   } catch(e) {
     viz.innerHTML = `<span style="color:var(--error);font-size:0.8rem;">通信エラー: ${e.message}</span>`;
   }
