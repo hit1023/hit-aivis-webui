@@ -1129,6 +1129,21 @@
       </div>
     </div>
 
+    <div class="card player-area" id="playerArea">
+      <div class="card-title">再生</div>
+      <div class="waveform-bar">
+        <div class="wave-bars" id="waveBars">
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+        </div>
+      </div>
+      <audio id="audioPlayer" controls></audio>
+      <br>
+      <a class="dl-btn" id="dlBtn">⬇ ダウンロード</a>
+    </div>
+
     <div class="card" style="animation-delay:0.25s">
       <div class="vram-header">
         <div class="card-title" style="margin-bottom:0">VRAMロード状態</div>
@@ -1158,21 +1173,6 @@
         <button class="upload-clear-btn" onclick="uploadClear()">クリア</button>
       </div>
       <div class="upload-progress" id="uploadProgress"></div>
-    </div>
-
-    <div class="card player-area" id="playerArea">
-      <div class="card-title">再生</div>
-      <div class="waveform-bar">
-        <div class="wave-bars" id="waveBars">
-          <div class="wave-bar"></div><div class="wave-bar"></div>
-          <div class="wave-bar"></div><div class="wave-bar"></div>
-          <div class="wave-bar"></div><div class="wave-bar"></div>
-          <div class="wave-bar"></div><div class="wave-bar"></div>
-        </div>
-      </div>
-      <audio id="audioPlayer" controls></audio>
-      <br>
-      <a class="dl-btn" id="dlBtn">⬇ ダウンロード</a>
     </div>
 
   </div><!-- /page-tts -->
