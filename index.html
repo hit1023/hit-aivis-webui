@@ -1990,10 +1990,14 @@ function onVizSlide(id, val) {
   _viz[id].accentType = val;
   const el = document.getElementById(`${id}-val`);
   const desc = document.getElementById(`${id}-desc`);
-  const svg = document.getElementById(`${id}-svg`);
+  const wrap = document.getElementById(`${id}-svg-wrap`);
   if (el) el.textContent = val;
   if (desc) desc.textContent = accentDesc(val, _viz[id].morae.length);
-  if (svg) svg.innerHTML = buildSvgContent(_viz[id].morae, val);
+  if (wrap) {
+    const morae = _viz[id].morae;
+    const max = morae.length;
+    wrap.innerHTML = `<svg id="${id}-svg" width="${(max + 1) * MW + 16}" height="${SH}" viewBox="0 0 ${(max + 1) * MW + 16} ${SH}" xmlns="http://www.w3.org/2000/svg">${buildSvgContent(morae, val)}</svg>`;
+  }
 }
 
 // ビジュアライザーUI全体を描画
@@ -2019,7 +2023,7 @@ function renderViz(id) {
       </div>
       <input type="range" class="accent-range" min="0" max="${max}" value="${at}"
              oninput="onVizSlide('${id}', parseInt(this.value))">
-      <div class="accent-svg-scroll">
+      <div class="accent-svg-scroll" id="${id}-svg-wrap">
         <svg id="${id}-svg" width="${(max + 1) * MW + 16}" height="${SH}"
              viewBox="0 0 ${(max + 1) * MW + 16} ${SH}"
              xmlns="http://www.w3.org/2000/svg">
