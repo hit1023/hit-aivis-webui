@@ -2528,7 +2528,7 @@ function renderReplacements() {
           <span style="color:var(--text);font-size:0.9rem">${esc(dst) || '<em style="color:var(--text-muted)">(空文字)</em>'}</span>
         </div>
         <div class="word-actions">
-          <button class="btn-danger" onclick="deleteReplacement(${JSON.stringify(src)})">🗑</button>
+          <button class="btn-danger" onclick="deleteReplacement(${JSON.stringify(src)}, this)">🗑</button>
         </div>
       </div>
     </div>`).join('');
@@ -2588,8 +2588,14 @@ async function addReplacement() {
   }
 }
 
-async function deleteReplacement(src) {
-  if (!confirm(`「${src}」の置換ルールを削除しますか？`)) return;
+async function deleteReplacement(src, btn) {
+  if (btn.dataset.confirm !== '1') {
+    btn.dataset.confirm = '1';
+    btn.textContent = '本当に削除';
+    btn.style.background = 'var(--error)';
+    setTimeout(() => { btn.dataset.confirm = ''; btn.textContent = '🗑'; btn.style.background = ''; }, 3000);
+    return;
+  }
   try {
     const res = await fetch(`${API}/text_replacements?src=${encodeURIComponent(src)}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
