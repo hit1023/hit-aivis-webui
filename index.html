@@ -1169,6 +1169,10 @@
       <audio id="audioPlayer" controls></audio>
       <br>
       <a class="dl-btn" id="dlBtn">⬇ ダウンロード</a>
+      <div id="accentResult" style="display:none; margin-top:1rem;">
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem;">アクセント</div>
+        <div id="accentPhraseViz" style="overflow-x:auto; display:flex; gap:1rem; flex-wrap:wrap;"></div>
+      </div>
     </div>
 
   </div><!-- /page-tts -->
@@ -1739,6 +1743,7 @@ async function speak() {
     audio.onpause = () => bars.forEach(b => b.classList.remove('playing'));
     audio.onended = () => bars.forEach(b => b.classList.remove('playing'));
 
+    fetchAndRenderAccent(text, speakerId);
     showTtsStatus('✓ 生成完了', 'success');
   } catch(e) {
     showTtsStatus(`エラー: ${e.message}`, 'error');
@@ -1753,6 +1758,40 @@ function showTtsStatus(msg, type) {
   const el = document.getElementById('ttsStatus');
   el.textContent = msg;
   el.className = `status ${type}`;
+}
+
+async function fetchAndRenderAccent(text, speakerId) {
+  const result = document.getElementById('accentResult');
+  const viz = document.getElementById('accentPhraseViz');
+  viz.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">解析中...</span>';
+  result.style.display = 'block';
+  try {
+    const res = await fetch(`${API}/audio_query?text=${encodeURIComponent(text)}&speaker_id=${speakerId}`, { method: 'POST' });
+    if (!res.ok) { result.style.display = 'none'; return; }
+    const data = await res.json();
+    renderAccentPhrases(data.accentPhrases || []);
+  } catch(e) {
+    result.style.display = 'none';
+  }
+}
+
+function renderAccentPhrases(phrases) {
+  const result = document.getElementById('accentResult');
+  const viz = document.getElementById('accentPhraseViz');
+  if (!phrases.length) { result.style.display = 'none'; return; }
+  let html = '';
+  for (const phrase of phrases) {
+    const morae = phrase.moras.map(m => m.text);
+    if (!morae.length) continue;
+    const at = phrase.accent;
+    const W = (morae.length + 1) * MW + 16;
+    html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;flex-shrink:0;">
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.25rem;">${accentDesc(at, morae.length)}</div>
+      <svg width="${W}" height="${SH}" viewBox="0 0 ${W} ${SH}" xmlns="http://www.w3.org/2000/svg">${buildSvgContent(morae, at)}</svg>
+    </div>`;
+  }
+  viz.innerHTML = html || '';
+  result.style.display = html ? 'block' : 'none';
 }
 
 async function loadModels() {
