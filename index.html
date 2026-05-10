@@ -1332,8 +1332,8 @@ const WORD_TYPE_LABELS = {
 };
 
 // エンジンのレスポンス（part_of_speech_detail）から品詞キーを解決
+// word_type より part_of_speech_detail を優先（エンジンが汎用 PROPER_NOUN を返す場合の対策）
 function resolveWordType(w) {
-  if (w.word_type) return w.word_type;
   const d1 = w.part_of_speech_detail_1 || '';
   const d2 = w.part_of_speech_detail_2 || '';
   const d3 = w.part_of_speech_detail_3 || '';
@@ -1346,16 +1346,15 @@ function resolveWordType(w) {
     }
     if (d2 === '地域') return 'LOCATION_NAME';
     if (d2 === '組織') return 'ORGANIZATION_NAME';
-    return 'PROPER_NOUN';
   }
+  if (w.word_type && w.word_type !== 'PROPER_NOUN') return w.word_type;
   if (pos === '動詞') return 'VERB';
   if (pos === '形容詞') return 'ADJECTIVE';
-  return 'PROPER_NOUN';
+  return w.word_type || 'PROPER_NOUN';
 }
 
 // エンジンのレスポンス（part_of_speech_detail）から品詞ラベルを解決
 function resolveWordTypeLabel(w) {
-  if (w.word_type) return WORD_TYPE_LABELS[w.word_type] || w.word_type;
   const d1 = w.part_of_speech_detail_1 || '';
   const d2 = w.part_of_speech_detail_2 || '';
   const d3 = w.part_of_speech_detail_3 || '';
@@ -1368,8 +1367,8 @@ function resolveWordTypeLabel(w) {
     }
     if (d2 === '地域') return '地名';
     if (d2 === '組織') return '組織・施設名';
-    return '固有名詞';
   }
+  if (w.word_type && w.word_type !== 'PROPER_NOUN') return WORD_TYPE_LABELS[w.word_type] || w.word_type;
   if (pos === '動詞') return '動詞';
   if (pos === '形容詞') return '形容詞';
   return '固有名詞';
