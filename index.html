@@ -1123,6 +1123,10 @@
         <span class="btn-text">🎵 音声を生成</span>
       </button>
       <div class="status" id="ttsStatus"></div>
+      <div id="accentResult" style="display:none; margin-top:1rem;">
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem;">アクセント</div>
+        <div id="accentPhraseViz" style="overflow-x:auto; display:flex; gap:1rem; flex-wrap:wrap;"></div>
+      </div>
     </div>
 
     <div class="card" style="animation-delay:0.25s">
@@ -1169,10 +1173,6 @@
       <audio id="audioPlayer" controls></audio>
       <br>
       <a class="dl-btn" id="dlBtn">⬇ ダウンロード</a>
-      <div id="accentResult" style="display:none; margin-top:1rem;">
-        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem;">アクセント</div>
-        <div id="accentPhraseViz" style="overflow-x:auto; display:flex; gap:1rem; flex-wrap:wrap;"></div>
-      </div>
     </div>
 
   </div><!-- /page-tts -->
