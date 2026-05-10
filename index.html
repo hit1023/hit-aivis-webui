@@ -2528,7 +2528,7 @@ function renderReplacements() {
           <span style="color:var(--text);font-size:0.9rem">${esc(dst) || '<em style="color:var(--text-muted)">(空文字)</em>'}</span>
         </div>
         <div class="word-actions">
-          <button class="btn-danger" onclick="deleteReplacement(${JSON.stringify(src)}, this)">🗑</button>
+          <button class="btn-danger" onclick="deleteReplacement('${esc(src)}', this)">🗑</button>
         </div>
       </div>
     </div>`).join('');
