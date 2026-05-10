@@ -1766,12 +1766,17 @@ async function fetchAndRenderAccent(text, speakerId) {
   viz.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">解析中...</span>';
   result.style.display = 'block';
   try {
-    const res = await fetch(`${API}/audio_query?text=${encodeURIComponent(text)}&speaker_id=${speakerId}`, { method: 'POST' });
-    if (!res.ok) { result.style.display = 'none'; return; }
+    const url = `${API}/audio_query?text=${encodeURIComponent(text)}&speaker_id=${speakerId}`;
+    const res = await fetch(url, { method: 'POST' });
+    if (!res.ok) {
+      viz.innerHTML = `<span style="color:var(--error);font-size:0.8rem;">エラー: ${res.status} (ルーターの再ビルドが必要な可能性があります)</span>`;
+      return;
+    }
     const data = await res.json();
+    console.log('[accent] accentPhrases:', data.accentPhrases);
     renderAccentPhrases(data.accentPhrases || []);
   } catch(e) {
-    result.style.display = 'none';
+    viz.innerHTML = `<span style="color:var(--error);font-size:0.8rem;">通信エラー: ${e.message}</span>`;
   }
 }
 
