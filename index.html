@@ -1293,6 +1293,29 @@
       <div class="status" id="repStatus"></div>
     </div>
 
+    <!-- ファイルインポート -->
+    <div class="card">
+      <div class="card-title">ファイルからインポート（UPSERT）</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
+        <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px">src@dst</code>
+        形式のテキストファイル（UTF-8）をアップロードします。<br>
+        既存の <em>src</em> は上書き、新規は追加されます。<code>name.txt</code> と同じ形式です。
+      </p>
+      <div id="repImportDrop"
+        ondragover="repImportDragOver(event)" ondragleave="repImportDragLeave(event)" ondrop="repImportDrop(event)"
+        style="border:2px dashed var(--border);border-radius:8px;padding:1.2rem;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;"
+        onclick="document.getElementById('repImportFile').click()">
+        <div style="font-size:0.85rem;color:var(--text-muted);">クリックまたはドラッグ＆ドロップでファイルを選択</div>
+        <div id="repImportFileName" style="margin-top:0.4rem;font-size:0.8rem;color:var(--accent);"></div>
+      </div>
+      <input type="file" id="repImportFile" accept=".txt" style="display:none" onchange="repImportFileSelected(event)">
+      <div style="display:flex;justify-content:flex-end;gap:0.6rem;margin-top:0.8rem;">
+        <button class="btn-ghost" onclick="repImportClear()">クリア</button>
+        <button class="btn-primary" id="repImportBtn" onclick="repImportRun()" disabled>⬆ インポート</button>
+      </div>
+      <div class="status" id="repImportStatus"></div>
+    </div>
+
     <!-- ルール一覧 -->
     <div class="card">
       <div class="dict-header">
@@ -2642,6 +2665,79 @@ function clearRepForm() {
     if (e.key === 'Enter') addReplacement();
   });
 });
+
+// ==========================================
+//  置換ルール インポート
+// ==========================================
+let _repImportFile = null;
+
+function repImportDragOver(e) {
+  e.preventDefault();
+  const el = document.getElementById('repImportDrop');
+  el.style.borderColor = 'var(--accent)';
+  el.style.background = 'rgba(79,142,255,0.05)';
+}
+
+function repImportDragLeave(e) {
+  const el = document.getElementById('repImportDrop');
+  el.style.borderColor = 'var(--border)';
+  el.style.background = '';
+}
+
+function repImportDrop(e) {
+  e.preventDefault();
+  repImportDragLeave(e);
+  const file = e.dataTransfer.files[0];
+  if (file) repImportSetFile(file);
+}
+
+function repImportFileSelected(e) {
+  const file = e.target.files[0];
+  if (file) repImportSetFile(file);
+}
+
+function repImportSetFile(file) {
+  _repImportFile = file;
+  document.getElementById('repImportFileName').textContent = `📄 ${file.name}  (${(file.size / 1024).toFixed(1)} KB)`;
+  document.getElementById('repImportBtn').disabled = false;
+  document.getElementById('repImportStatus').className = 'status';
+}
+
+function repImportClear() {
+  _repImportFile = null;
+  document.getElementById('repImportFileName').textContent = '';
+  document.getElementById('repImportBtn').disabled = true;
+  document.getElementById('repImportFile').value = '';
+  document.getElementById('repImportStatus').className = 'status';
+}
+
+async function repImportRun() {
+  if (!_repImportFile) return;
+  const btn = document.getElementById('repImportBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ インポート中...';
+  const statusEl = document.getElementById('repImportStatus');
+  statusEl.className = 'status';
+
+  try {
+    const form = new FormData();
+    form.append('file', _repImportFile);
+    const res = await fetch(`${API}/text_replacements/import`, { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'インポート失敗');
+
+    statusEl.textContent = `✓ ${data.message}`;
+    statusEl.className = 'status success';
+    repImportClear();
+    loadReplacements();
+  } catch(e) {
+    statusEl.textContent = `✗ ${e.message}`;
+    statusEl.className = 'status error';
+    btn.disabled = false;
+  } finally {
+    btn.textContent = '⬆ インポート';
+  }
+}
 
 // ==========================================
 //  履歴
