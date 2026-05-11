@@ -3036,7 +3036,7 @@ function kanaLoadFile(file) {
 
 function kanaExtractKana(query) {
   let kana = '';
-  for (const phrase of query.accentPhrases || []) {
+  for (const phrase of query.accent_phrases || query.accentPhrases || []) {
     for (const mora of phrase.moras || []) kana += mora.text || '';
     if (phrase.pauseMora) kana += phrase.pauseMora.text || '';
   }
