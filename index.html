@@ -1040,6 +1040,7 @@
     <button class="tab-btn active" onclick="switchTab('tts')">🎵 音声合成</button>
     <button class="tab-btn" onclick="switchTab('dict')">📖 単語辞書</button>
     <button class="tab-btn" onclick="switchTab('replacer')">📝 置換ルール</button>
+    <button class="tab-btn" onclick="switchTab('history')">📜 履歴</button>
   </nav>
 
   <!-- ============================
@@ -1326,6 +1327,26 @@
 
   </div><!-- /page-replacer -->
 
+  <!-- ============================
+       履歴
+       ============================ -->
+  <div class="page" id="page-history">
+
+    <div class="card">
+      <div class="card-title">音声合成履歴</div>
+      <div style="display:flex;gap:0.6rem;align-items:center;margin-bottom:0.8rem;flex-wrap:wrap;">
+        <select id="histSpeakerFilter" style="flex:1;min-width:160px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;font-size:0.85rem;">
+          <option value="">すべてのスピーカー</option>
+        </select>
+        <button class="btn-ghost" onclick="loadHistory(1)" style="white-space:nowrap;">更新</button>
+      </div>
+      <div id="histStatus" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem;"></div>
+      <div id="histList"></div>
+      <div id="histPager" style="display:flex;gap:0.4rem;justify-content:center;margin-top:1rem;flex-wrap:wrap;"></div>
+    </div>
+
+  </div><!-- /page-history -->
+
 </div>
 
 <!-- 削除確認ダイアログ -->
@@ -1396,7 +1417,7 @@ function resolveWordTypeLabel(w) {
 // ==========================================
 //  タブ
 // ==========================================
-const _TABS = ['tts', 'dict', 'replacer'];
+const _TABS = ['tts', 'dict', 'replacer', 'history'];
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active', _TABS[i] === tab);
@@ -1405,6 +1426,7 @@ function switchTab(tab) {
   document.getElementById(`page-${tab}`).classList.add('active');
   if (tab === 'dict') loadDict();
   if (tab === 'replacer') loadReplacements();
+  if (tab === 'history') loadHistory(1);
 }
 
 // ==========================================
@@ -1644,6 +1666,7 @@ async function loadSpeakers() {
     if (_presets[initialId]) applyPreset(_presets[initialId]);
     updatePresetBar();
     updateApiSample();
+    populateHistSpeakerFilter(speakers);
   } catch(e) {
     console.error('[Speaker] loadSpeakers failed:', e);
     document.getElementById('apiStatus').textContent = '接続失敗';
@@ -2619,6 +2642,98 @@ function clearRepForm() {
     if (e.key === 'Enter') addReplacement();
   });
 });
+
+// ==========================================
+//  履歴
+// ==========================================
+let _histPage = 1;
+const _HIST_PER_PAGE = 20;
+
+async function loadHistory(page) {
+  _histPage = page;
+  const speakerId = document.getElementById('histSpeakerFilter').value;
+  let url = `${API}/history?page=${page}&per_page=${_HIST_PER_PAGE}`;
+  if (speakerId) url += `&speaker_id=${speakerId}`;
+
+  const statusEl = document.getElementById('histStatus');
+  const listEl   = document.getElementById('histList');
+  const pagerEl  = document.getElementById('histPager');
+  statusEl.textContent = '読み込み中...';
+  listEl.innerHTML = '';
+  pagerEl.innerHTML = '';
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+
+    const totalPages = Math.max(1, Math.ceil(data.total / _HIST_PER_PAGE));
+    statusEl.textContent = `全 ${data.total} 件 — ${page} / ${totalPages} ページ`;
+
+    if (data.items.length === 0) {
+      listEl.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:2rem 0;">履歴がありません</div>';
+      return;
+    }
+
+    listEl.innerHTML = data.items.map(item => {
+      const dt = new Date(item.created_at);
+      const dateStr = dt.toLocaleString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      const voice = item.speaker_name || `ID: ${item.speaker_id}`;
+      const changed = item.original_text !== item.processed_text;
+      return `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:0.8rem 1rem;margin-bottom:0.6rem;">
+          <div style="display:flex;gap:0.8rem;align-items:baseline;flex-wrap:wrap;margin-bottom:0.4rem;">
+            <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">${dateStr}</span>
+            <span style="font-size:0.8rem;color:var(--accent);font-weight:600;">${esc(voice)}</span>
+          </div>
+          <div style="font-size:0.9rem;word-break:break-all;">${esc(item.original_text)}</div>
+          ${changed ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem;">→ 置換後: ${esc(item.processed_text)}</div>` : ''}
+          <div style="display:flex;gap:0.8rem;margin-top:0.4rem;flex-wrap:wrap;">
+            ${histParam('話速', item.speed)}
+            ${histParam('音高', item.pitch)}
+            ${histParam('抑揚', item.intonation)}
+            ${histParam('音量', item.volume)}
+            ${histParam('緩急', item.tempo_dynamics)}
+          </div>
+        </div>`;
+    }).join('');
+
+    // ページネーション
+    const makeBtn = (p, label, disabled) =>
+      `<button class="btn-ghost" style="min-width:2.2rem;${disabled?'opacity:0.4;pointer-events:none;':''}" onclick="loadHistory(${p})">${label}</button>`;
+
+    let pagerHtml = makeBtn(1, '«', page <= 1) + makeBtn(page - 1, '‹', page <= 1);
+    const start = Math.max(1, page - 2);
+    const end   = Math.min(totalPages, page + 2);
+    for (let p = start; p <= end; p++) {
+      pagerHtml += `<button class="btn-ghost" style="min-width:2.2rem;${p===page?'color:var(--accent);border-color:var(--accent);':''}" onclick="loadHistory(${p})">${p}</button>`;
+    }
+    pagerHtml += makeBtn(page + 1, '›', page >= totalPages) + makeBtn(totalPages, '»', page >= totalPages);
+    pagerEl.innerHTML = pagerHtml;
+
+  } catch(e) {
+    statusEl.textContent = '取得に失敗しました';
+    console.error('[History]', e);
+  }
+}
+
+function histParam(label, val) {
+  if (val == null) return '';
+  return `<span style="font-size:0.72rem;color:var(--text-muted);">${label}: ${Number(val).toFixed(2)}</span>`;
+}
+
+// スピーカーフィルタをスピーカー一覧で埋める（loadSpeakers後に呼ぶ）
+function populateHistSpeakerFilter(speakers) {
+  const sel = document.getElementById('histSpeakerFilter');
+  speakers.forEach(spk => {
+    spk.styles.forEach(st => {
+      const opt = document.createElement('option');
+      opt.value = st.id;
+      opt.textContent = `${spk.name}（${st.name}）`;
+      sel.appendChild(opt);
+    });
+  });
+}
 
 // ==========================================
 //  初期化
