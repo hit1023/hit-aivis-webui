@@ -2648,6 +2648,7 @@ function clearRepForm() {
 // ==========================================
 let _histPage = 1;
 const _HIST_PER_PAGE = 20;
+let _histItems = [];  // アイテムをJSで保持しインデックスで参照（HTMLへのJSON埋め込みを避ける）
 
 async function loadHistory(page) {
   _histPage = page;
@@ -2667,6 +2668,8 @@ async function loadHistory(page) {
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
 
+    _histItems = data.items;
+
     const totalPages = Math.max(1, Math.ceil(data.total / _HIST_PER_PAGE));
     statusEl.textContent = `全 ${data.total} 件 — ${page} / ${totalPages} ページ`;
 
@@ -2680,15 +2683,13 @@ async function loadHistory(page) {
       const dateStr = dt.toLocaleString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
       const voice = item.speaker_name || `ID: ${item.speaker_id}`;
       const changed = item.original_text !== item.processed_text;
-      const playId = `hist-play-${idx}`;
-      const itemJson = JSON.stringify(item);
       return `
         <div style="border:1px solid var(--border);border-radius:8px;padding:0.8rem 1rem;margin-bottom:0.6rem;">
           <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:0.4rem;">
             <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">${dateStr}</span>
             <span style="font-size:0.8rem;color:var(--accent);font-weight:600;flex:1;">${esc(voice)}</span>
-            <button id="${playId}" onclick="histPlay(this, ${itemJson})" style="${_histBtnStyle}">▶ 再生</button>
-            <button onclick="histCopy(this, ${JSON.stringify(item.original_text)})" style="${_histBtnStyle}">📋 コピー</button>
+            <button id="hist-play-${idx}" onclick="histPlay(this,${idx})" style="${_histBtnStyle}">▶ 再生</button>
+            <button id="hist-copy-${idx}" onclick="histCopy(this,${idx})" style="${_histBtnStyle}">📋 コピー</button>
           </div>
           <div style="font-size:0.9rem;word-break:break-all;">${esc(item.original_text)}</div>
           ${changed ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem;">→ 置換後: ${esc(item.processed_text)}</div>` : ''}
@@ -2723,7 +2724,8 @@ async function loadHistory(page) {
 
 const _histBtnStyle = 'background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-muted);font-size:0.75rem;padding:0.2rem 0.65rem;cursor:pointer;white-space:nowrap;transition:color 0.15s,border-color 0.15s;';
 
-function histCopy(btn, text) {
+function histCopy(btn, idx) {
+  const text = _histItems[idx].original_text;
   const finish = (ok) => {
     btn.textContent = ok ? '✓ コピー済み' : '✗ 失敗';
     btn.style.color = ok ? 'var(--success)' : 'var(--error)';
@@ -2746,33 +2748,29 @@ function histCopy(btn, text) {
       ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
       document.body.appendChild(ta);
       ta.select();
-      const ok = document.execCommand('copy');
+      finish(document.execCommand('copy'));
       document.body.removeChild(ta);
-      finish(ok);
     } catch(e) { finish(false); }
   }
 }
 
 let _histAudio = null;
 
-async function histPlay(btn, item) {
+async function histPlay(btn, idx) {
+  const item = _histItems[idx];
   if (_histAudio) { _histAudio.pause(); _histAudio = null; }
 
-  const orig = btn.textContent;
   btn.textContent = '⏳';
   btn.disabled = true;
 
   try {
-    const body = {
-      text: item.original_text,
-      speaker_id: item.speaker_id,
-    };
-    if (item.speed       != null) body.speed             = item.speed;
-    if (item.pitch       != null) body.pitch             = item.pitch;
-    if (item.intonation  != null) body.intonation        = item.intonation;
-    if (item.volume      != null) body.volume            = item.volume;
-    if (item.tempo_dynamics != null) body.tempo_dynamics = item.tempo_dynamics;
-    if (item.pause_length   != null) body.pause_length   = item.pause_length;
+    const body = { text: item.original_text, speaker_id: item.speaker_id };
+    if (item.speed              != null) body.speed              = item.speed;
+    if (item.pitch              != null) body.pitch              = item.pitch;
+    if (item.intonation         != null) body.intonation         = item.intonation;
+    if (item.volume             != null) body.volume             = item.volume;
+    if (item.tempo_dynamics     != null) body.tempo_dynamics     = item.tempo_dynamics;
+    if (item.pause_length       != null) body.pause_length       = item.pause_length;
     if (item.pause_length_scale != null) body.pause_length_scale = item.pause_length_scale;
 
     const res = await fetch(`${API}/speak`, {
@@ -2782,29 +2780,29 @@ async function histPlay(btn, item) {
     });
     if (!res.ok) throw new Error(await res.text());
 
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(await res.blob());
     _histAudio = new Audio(url);
     btn.textContent = '⏹ 停止';
     btn.disabled = false;
-    _histAudio.play();
-    _histAudio.onended = () => {
-      btn.textContent = orig;
-      URL.revokeObjectURL(url);
-      _histAudio = null;
-    };
     btn.onclick = () => {
       _histAudio.pause();
       URL.revokeObjectURL(url);
       _histAudio = null;
-      btn.textContent = orig;
-      btn.onclick = () => histPlay(btn, item);
+      btn.textContent = '▶ 再生';
+      btn.onclick = () => histPlay(btn, idx);
+    };
+    _histAudio.play();
+    _histAudio.onended = () => {
+      btn.textContent = '▶ 再生';
+      btn.onclick = () => histPlay(btn, idx);
+      URL.revokeObjectURL(url);
+      _histAudio = null;
     };
   } catch(e) {
     btn.textContent = '✗ 失敗';
     btn.disabled = false;
     console.error('[HistPlay]', e);
-    setTimeout(() => { btn.textContent = orig; btn.onclick = () => histPlay(btn, item); }, 1500);
+    setTimeout(() => { btn.textContent = '▶ 再生'; btn.onclick = () => histPlay(btn, idx); }, 1500);
   }
 }
 
