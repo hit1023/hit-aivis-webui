@@ -3000,9 +3000,11 @@ function populateHistSpeakerFilter(speakers) {
 // ==========================================
 //  読みチェック
 // ==========================================
-let _kanaRows = [];   // { text, kana, queryError }
+let _kanaRows = [];   // { text, kana, queryError, sources }
 let _kanaAudio = null;
 let _kanaProcessing = false;
+let _kanaRepRules = {};       // src→dst from /text_replacements
+let _kanaDictSurfaces = new Set(); // surface strings from /user_dict
 
 function kanaDropOver(e) {
   e.preventDefault();
@@ -3034,6 +3036,17 @@ function kanaLoadFile(file) {
   reader.readAsText(file, 'utf-8');
 }
 
+function kanaDetectSources(text) {
+  const sources = [];
+  for (const src of Object.keys(_kanaRepRules)) {
+    if (src && text.includes(src)) { sources.push('replacement'); break; }
+  }
+  for (const surface of _kanaDictSurfaces) {
+    if (surface && text.includes(surface)) { sources.push('dict'); break; }
+  }
+  return sources;
+}
+
 function kanaExtractKana(query) {
   let kana = '';
   for (const phrase of query.accent_phrases || query.accentPhrases || []) {
@@ -3052,7 +3065,24 @@ async function kanaStart() {
   if (!words.length) { alert('テキストを入力してください'); return; }
 
   _kanaProcessing = true;
-  _kanaRows = words.map(w => ({ text: w, kana: null, queryError: false }));
+
+  // 置換ルール・辞書を取得してソース判定に使う
+  try {
+    const [repRes, dictRes] = await Promise.all([
+      fetch(`${API}/text_replacements`),
+      fetch(`${API}/user_dict`),
+    ]);
+    _kanaRepRules = repRes.ok ? await repRes.json() : {};
+    const dictData = dictRes.ok ? await dictRes.json() : {};
+    _kanaDictSurfaces = new Set(
+      Object.values(dictData).map(w => w.surface || '').filter(Boolean)
+    );
+  } catch(e) {
+    _kanaRepRules = {};
+    _kanaDictSurfaces = new Set();
+  }
+
+  _kanaRows = words.map(w => ({ text: w, kana: null, queryError: false, sources: kanaDetectSources(w) }));
   if (_kanaAudio) { _kanaAudio.pause(); _kanaAudio = null; }
 
   document.getElementById('kanaResultCard').style.display = '';
@@ -3102,11 +3132,20 @@ function kanaRowHtml(idx) {
   const row = _kanaRows[idx];
   const loading = row.kana === null;
 
+  const sourceBadges = (row.sources || []).map(s =>
+    s === 'replacement'
+      ? `<span style="font-size:0.68rem;background:rgba(255,180,0,0.15);color:#ffb400;border:1px solid rgba(255,180,0,0.4);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">🔄 置換</span>`
+      : `<span style="font-size:0.68rem;background:rgba(79,142,255,0.12);color:var(--accent);border:1px solid rgba(79,142,255,0.35);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">📖 辞書</span>`
+  ).join('');
+
   const kanaCell = loading
     ? `<span style="color:var(--text-muted);font-size:0.8rem;">取得中...</span>`
     : row.queryError
       ? `<span style="color:var(--error);font-size:0.8rem;">取得失敗</span>`
-      : `<span style="font-size:0.85rem;color:var(--text-muted);">${esc(row.kana) || '―'}</span>`;
+      : `<div style="display:flex;flex-direction:column;gap:0.25rem;">
+           <span style="font-size:0.85rem;color:var(--text-muted);">${esc(row.kana) || '―'}</span>
+           ${sourceBadges ? `<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">${sourceBadges}</div>` : ''}
+         </div>`;
 
   const playBtn = `<button onclick="kanaPlay(this,${idx})"
     style="${_histBtnStyle}${loading ? 'opacity:0.35;pointer-events:none;' : ''}">▶</button>`;
