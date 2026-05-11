@@ -1041,6 +1041,7 @@
     <button class="tab-btn" onclick="switchTab('dict')">📖 単語辞書</button>
     <button class="tab-btn" onclick="switchTab('replacer')">📝 置換ルール</button>
     <button class="tab-btn" onclick="switchTab('history')">📜 履歴</button>
+    <button class="tab-btn" onclick="switchTab('kana')">🔤 読みチェック</button>
   </nav>
 
   <!-- ============================
@@ -1376,6 +1377,66 @@
 
   </div><!-- /page-history -->
 
+  <!-- ============================
+       読みチェック
+       ============================ -->
+  <div class="page" id="page-kana">
+
+    <!-- 入力 -->
+    <div class="card">
+      <div class="card-title">単語リストを入力</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
+        1行1単語（フレーズ）で入力するか、テキストファイルをアップロードしてください。<br>
+        各単語をカナに変換し、音声でも確認できます。カナは直接編集可能で、そのまま置換ルールに追加できます。
+      </p>
+      <div id="kanaDropZone"
+        ondragover="kanaDropOver(event)" ondragleave="kanaDropLeave(event)" ondrop="kanaDropFile(event)"
+        onclick="document.getElementById('kanaFileInput').click()"
+        style="border:2px dashed var(--border);border-radius:8px;padding:0.9rem;text-align:center;cursor:pointer;margin-bottom:0.8rem;transition:border-color 0.2s,background 0.2s;font-size:0.82rem;color:var(--text-muted);">
+        クリックまたはドラッグ＆ドロップでテキストファイルを読み込む
+        <span id="kanaFileName" style="display:block;margin-top:0.25rem;color:var(--accent);font-size:0.8rem;"></span>
+      </div>
+      <input type="file" id="kanaFileInput" accept=".txt" style="display:none" onchange="kanaFileSelected(event)">
+      <textarea id="kanaInput" rows="9"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.7rem;font-size:0.85rem;resize:vertical;line-height:1.8;margin-bottom:0.8rem;"
+        placeholder="カット&#10;パーマ&#10;トリートメント&#10;（1行1単語）"></textarea>
+      <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;">
+        <label style="font-size:0.82rem;color:var(--text-muted);white-space:nowrap;">スピーカー</label>
+        <div class="select-wrapper" style="flex:1;min-width:180px;">
+          <select id="kanaSpeakerSelect"><option value="">読み込み中...</option></select>
+          <span class="select-arrow">▾</span>
+        </div>
+        <button class="btn-primary" id="kanaStartBtn" onclick="kanaStart()">🔄 変換開始</button>
+      </div>
+    </div>
+
+    <!-- 変換結果 -->
+    <div class="card" id="kanaResultCard" style="display:none;">
+      <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.6rem;flex-wrap:wrap;">
+        <div class="card-title" style="margin-bottom:0;flex:1;">変換結果</div>
+        <span id="kanaProgressText" style="font-size:0.8rem;color:var(--text-muted);"></span>
+      </div>
+      <div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:1rem;overflow:hidden;">
+        <div id="kanaProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.3s;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2rem 1fr 1fr 2.8rem;gap:0.4rem;padding:0.35rem 0.6rem;font-size:0.73rem;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:0.3rem;">
+        <label style="display:flex;align-items:center;justify-content:center;">
+          <input type="checkbox" id="kanaCheckAll" onchange="kanaToggleAll(this.checked)">
+        </label>
+        <span>元テキスト</span>
+        <span>読み（クリックで編集）</span>
+        <span></span>
+      </div>
+      <div id="kanaList"></div>
+      <div id="kanaExportArea" style="display:none;gap:0.6rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
+        <button class="btn-ghost" onclick="kanaExportTxt()">⬇ name.txtとしてDL</button>
+        <button class="btn-primary" onclick="kanaImportRules()">➕ 置換ルールに追加</button>
+      </div>
+      <div class="status" id="kanaImportStatus"></div>
+    </div>
+
+  </div><!-- /page-kana -->
+
 </div>
 
 <!-- 削除確認ダイアログ -->
@@ -1446,7 +1507,7 @@ function resolveWordTypeLabel(w) {
 // ==========================================
 //  タブ
 // ==========================================
-const _TABS = ['tts', 'dict', 'replacer', 'history'];
+const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana'];
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active', _TABS[i] === tab);
@@ -1696,6 +1757,7 @@ async function loadSpeakers() {
     updatePresetBar();
     updateApiSample();
     populateHistSpeakerFilter(speakers);
+    populateKanaSpeakerSelect(speakers);
   } catch(e) {
     console.error('[Speaker] loadSpeakers failed:', e);
     document.getElementById('apiStatus').textContent = '接続失敗';
@@ -2942,6 +3004,233 @@ function populateHistSpeakerFilter(speakers) {
       sel.appendChild(opt);
     });
   });
+}
+
+// ==========================================
+//  読みチェック
+// ==========================================
+let _kanaRows = [];
+let _kanaAudio = null;
+let _kanaProcessing = false;
+
+function kanaDropOver(e) {
+  e.preventDefault();
+  const el = document.getElementById('kanaDropZone');
+  el.style.borderColor = 'var(--accent)';
+  el.style.background = 'rgba(79,142,255,0.05)';
+}
+function kanaDropLeave(e) {
+  const el = document.getElementById('kanaDropZone');
+  el.style.borderColor = 'var(--border)';
+  el.style.background = '';
+}
+function kanaDropFile(e) {
+  e.preventDefault();
+  kanaDropLeave(e);
+  const f = e.dataTransfer.files[0];
+  if (f) kanaLoadFile(f);
+}
+function kanaFileSelected(e) {
+  const f = e.target.files[0];
+  if (f) kanaLoadFile(f);
+}
+function kanaLoadFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('kanaInput').value = ev.target.result;
+    document.getElementById('kanaFileName').textContent = `📄 ${file.name}`;
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function kanaExtractKana(query) {
+  let kana = '';
+  for (const phrase of query.accentPhrases || []) {
+    for (const mora of phrase.moras || []) kana += mora.text || '';
+    if (phrase.pauseMora) kana += phrase.pauseMora.text || '';
+  }
+  return kana;
+}
+
+async function kanaStart() {
+  if (_kanaProcessing) return;
+  const speakerId = parseInt(document.getElementById('kanaSpeakerSelect').value);
+  if (!speakerId) { alert('スピーカーを選択してください'); return; }
+  const words = document.getElementById('kanaInput').value
+    .split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  if (!words.length) { alert('テキストを入力してください'); return; }
+
+  _kanaProcessing = true;
+  _kanaRows = words.map(w => ({ text: w, kana: null, error: false }));
+
+  const resultCard = document.getElementById('kanaResultCard');
+  resultCard.style.display = '';
+  document.getElementById('kanaExportArea').style.display = 'none';
+  document.getElementById('kanaImportStatus').className = 'status';
+  document.getElementById('kanaStartBtn').disabled = true;
+  document.getElementById('kanaCheckAll').checked = false;
+  document.getElementById('kanaProgressBar').style.width = '0%';
+  document.getElementById('kanaProgressText').textContent = `0 / ${words.length}`;
+  kanaRenderAll();
+
+  let done = 0;
+  const updateProgress = () => {
+    done++;
+    document.getElementById('kanaProgressBar').style.width = `${Math.round(done / words.length * 100)}%`;
+    document.getElementById('kanaProgressText').textContent = `${done} / ${words.length}`;
+  };
+
+  let qi = 0;
+  async function worker() {
+    while (qi < _kanaRows.length) {
+      const idx = qi++;
+      const row = _kanaRows[idx];
+      try {
+        const res = await fetch(`${API}/audio_query?text=${encodeURIComponent(row.text)}&speaker_id=${speakerId}`, { method: 'POST' });
+        if (!res.ok) throw new Error(res.status);
+        row.kana = kanaExtractKana(await res.json());
+      } catch(e) {
+        row.error = true;
+        row.kana = '（取得失敗）';
+      }
+      kanaRenderRow(idx);
+      updateProgress();
+    }
+  }
+  await Promise.all([worker(), worker(), worker()]);
+
+  _kanaProcessing = false;
+  document.getElementById('kanaStartBtn').disabled = false;
+  document.getElementById('kanaExportArea').style.display = 'flex';
+  document.getElementById('kanaCheckAll').checked = true;
+  kanaToggleAll(true);
+}
+
+function kanaRenderAll() {
+  document.getElementById('kanaList').innerHTML = _kanaRows.map((_, i) => kanaRowHtml(i)).join('');
+}
+
+function kanaRenderRow(idx) {
+  const el = document.getElementById(`kana-row-${idx}`);
+  if (el) el.outerHTML = kanaRowHtml(idx);
+}
+
+function kanaRowHtml(idx) {
+  const row = _kanaRows[idx];
+  const loading = row.kana === null;
+  const kanaCell = loading
+    ? `<span style="color:var(--text-muted);font-size:0.8rem;">処理中...</span>`
+    : `<span contenteditable="${row.error ? 'false' : 'true'}" id="kana-edit-${idx}"
+         style="outline:none;border-bottom:1px dashed ${row.error ? 'var(--error)' : 'var(--border)'};color:${row.error ? 'var(--error)' : 'inherit'};cursor:${row.error ? 'default' : 'text'};min-width:2rem;display:inline-block;"
+         oninput="_kanaRows[${idx}].kana=this.textContent.trim()"
+         onfocus="this.style.borderBottomColor='var(--accent)'"
+         onblur="this.style.borderBottomColor='${row.error ? 'var(--error)' : 'var(--border)'}'">` +
+       esc(row.kana) + `</span>`;
+  const playDisabled = loading || row.error;
+  return `<div id="kana-row-${idx}" style="display:grid;grid-template-columns:2rem 1fr 1fr 2.8rem;gap:0.4rem;align-items:center;padding:0.45rem 0.6rem;border-bottom:1px solid var(--border);">
+    <label style="display:flex;align-items:center;justify-content:center;">
+      <input type="checkbox" class="kana-check" data-idx="${idx}" ${(!loading && !row.error) ? 'checked' : ''} ${(loading || row.error) ? 'disabled' : ''}>
+    </label>
+    <span style="font-size:0.88rem;word-break:break-all;">${esc(row.text)}</span>
+    <span style="font-size:0.88rem;">${kanaCell}</span>
+    <button id="kana-play-${idx}" onclick="kanaPlayRow(this,${idx})"
+      style="${_histBtnStyle}${playDisabled ? 'opacity:0.35;pointer-events:none;' : ''}">▶</button>
+  </div>`;
+}
+
+async function kanaPlayRow(btn, idx) {
+  const row = _kanaRows[idx];
+  if (!row.kana || row.error) return;
+  if (_kanaAudio) { _kanaAudio.pause(); _kanaAudio = null; }
+  const speakerId = parseInt(document.getElementById('kanaSpeakerSelect').value);
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/speak`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: row.text, speaker_id: speakerId }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = URL.createObjectURL(await res.blob());
+    _kanaAudio = new Audio(url);
+    btn.textContent = '⏹';
+    btn.disabled = false;
+    _kanaAudio.play();
+    _kanaAudio.onended = () => {
+      btn.textContent = '▶';
+      btn.onclick = () => kanaPlayRow(btn, idx);
+      URL.revokeObjectURL(url);
+      _kanaAudio = null;
+    };
+    btn.onclick = () => {
+      _kanaAudio.pause();
+      URL.revokeObjectURL(url);
+      _kanaAudio = null;
+      btn.textContent = '▶';
+      btn.onclick = () => kanaPlayRow(btn, idx);
+    };
+  } catch(e) {
+    btn.textContent = '✗';
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = '▶'; btn.onclick = () => kanaPlayRow(btn, idx); }, 1500);
+  }
+}
+
+function kanaToggleAll(checked) {
+  document.querySelectorAll('.kana-check:not([disabled])').forEach(cb => cb.checked = checked);
+}
+
+function kanaGetSelected() {
+  const result = [];
+  document.querySelectorAll('.kana-check:checked').forEach(cb => {
+    const idx = parseInt(cb.dataset.idx);
+    const row = _kanaRows[idx];
+    const editEl = document.getElementById(`kana-edit-${idx}`);
+    const kana = (editEl ? editEl.textContent.trim() : row.kana) || '';
+    if (row.text && kana) result.push({ src: row.text, dst: kana });
+  });
+  return result;
+}
+
+function kanaExportTxt() {
+  const selected = kanaGetSelected();
+  if (!selected.length) { alert('エクスポートする行を選択してください'); return; }
+  const blob = new Blob([selected.map(r => `${r.src}@${r.dst}`).join('\n')], { type: 'text/plain;charset=utf-8' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'name.txt' });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function kanaImportRules() {
+  const selected = kanaGetSelected();
+  if (!selected.length) { alert('追加する行を選択してください'); return; }
+  const statusEl = document.getElementById('kanaImportStatus');
+  statusEl.className = 'status';
+  const blob = new Blob([selected.map(r => `${r.src}@${r.dst}`).join('\n')], { type: 'text/plain;charset=utf-8' });
+  const form = new FormData();
+  form.append('file', blob, 'import.txt');
+  try {
+    const res = await fetch(`${API}/text_replacements/import`, { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || '失敗');
+    statusEl.textContent = `✓ ${data.message}`;
+    statusEl.className = 'status success';
+  } catch(e) {
+    statusEl.textContent = `✗ ${e.message}`;
+    statusEl.className = 'status error';
+  }
+}
+
+function populateKanaSpeakerSelect(speakers) {
+  const sel = document.getElementById('kanaSpeakerSelect');
+  sel.innerHTML = '';
+  speakers.forEach(spk => spk.styles.forEach(st => {
+    const opt = document.createElement('option');
+    opt.value = st.id;
+    opt.textContent = `${spk.name}（${st.name}）`;
+    sel.appendChild(opt);
+  }));
 }
 
 // ==========================================
