@@ -1386,8 +1386,8 @@
     <div class="card">
       <div class="card-title">単語リストを入力</div>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
-        1行1単語（フレーズ）で入力するか、テキストファイルをアップロードしてください。<br>
-        各単語をカナに変換し、音声でも確認できます。カナは直接編集可能で、そのまま置換ルールに追加できます。
+        1行1単語で入力してください。▶ で再生して読み方を耳で確認し、<br>
+        間違いがあれば <strong style="color:var(--error)">✗ 修正</strong> から置換ルール追加または単語辞書登録ができます。
       </p>
       <div id="kanaDropZone"
         ondragover="kanaDropOver(event)" ondragleave="kanaDropLeave(event)" ondrop="kanaDropFile(event)"
@@ -1406,33 +1406,24 @@
           <select id="kanaSpeakerSelect"><option value="">読み込み中...</option></select>
           <span class="select-arrow">▾</span>
         </div>
-        <button class="btn-primary" id="kanaStartBtn" onclick="kanaStart()">🔄 変換開始</button>
+        <button class="btn-primary" id="kanaStartBtn" onclick="kanaStart()">▶ 確認開始</button>
       </div>
     </div>
 
-    <!-- 変換結果 -->
+    <!-- 確認結果 -->
     <div class="card" id="kanaResultCard" style="display:none;">
       <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.6rem;flex-wrap:wrap;">
-        <div class="card-title" style="margin-bottom:0;flex:1;">変換結果</div>
+        <div class="card-title" style="margin-bottom:0;flex:1;">読み確認</div>
         <span id="kanaProgressText" style="font-size:0.8rem;color:var(--text-muted);"></span>
       </div>
       <div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:1rem;overflow:hidden;">
         <div id="kanaProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.3s;"></div>
       </div>
-      <div style="display:grid;grid-template-columns:2rem 1fr 1fr 2.8rem;gap:0.4rem;padding:0.35rem 0.6rem;font-size:0.73rem;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:0.3rem;">
-        <label style="display:flex;align-items:center;justify-content:center;">
-          <input type="checkbox" id="kanaCheckAll" onchange="kanaToggleAll(this.checked)">
-        </label>
-        <span>元テキスト</span>
-        <span>読み（クリックで編集）</span>
-        <span></span>
+      <!-- ヘッダ -->
+      <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:0.4rem;padding:0.35rem 0.8rem;font-size:0.73rem;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:0.3rem;">
+        <span>単語</span><span>AivisSpeechの読み</span><span>再生</span><span>判定</span>
       </div>
       <div id="kanaList"></div>
-      <div id="kanaExportArea" style="display:none;gap:0.6rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap;">
-        <button class="btn-ghost" onclick="kanaExportTxt()">⬇ name.txtとしてDL</button>
-        <button class="btn-primary" onclick="kanaImportRules()">➕ 置換ルールに追加</button>
-      </div>
-      <div class="status" id="kanaImportStatus"></div>
     </div>
 
   </div><!-- /page-kana -->
@@ -3009,7 +3000,7 @@ function populateHistSpeakerFilter(speakers) {
 // ==========================================
 //  読みチェック
 // ==========================================
-let _kanaRows = [];
+let _kanaRows = [];   // { text, kana, queryError }
 let _kanaAudio = null;
 let _kanaProcessing = false;
 
@@ -3061,55 +3052,47 @@ async function kanaStart() {
   if (!words.length) { alert('テキストを入力してください'); return; }
 
   _kanaProcessing = true;
-  _kanaRows = words.map(w => ({ text: w, kana: null, error: false }));
+  _kanaRows = words.map(w => ({ text: w, kana: null, queryError: false }));
+  if (_kanaAudio) { _kanaAudio.pause(); _kanaAudio = null; }
 
-  const resultCard = document.getElementById('kanaResultCard');
-  resultCard.style.display = '';
-  document.getElementById('kanaExportArea').style.display = 'none';
-  document.getElementById('kanaImportStatus').className = 'status';
+  document.getElementById('kanaResultCard').style.display = '';
   document.getElementById('kanaStartBtn').disabled = true;
-  document.getElementById('kanaCheckAll').checked = false;
   document.getElementById('kanaProgressBar').style.width = '0%';
   document.getElementById('kanaProgressText').textContent = `0 / ${words.length}`;
   kanaRenderAll();
 
   let done = 0;
-  const updateProgress = () => {
-    done++;
-    document.getElementById('kanaProgressBar').style.width = `${Math.round(done / words.length * 100)}%`;
-    document.getElementById('kanaProgressText').textContent = `${done} / ${words.length}`;
-  };
-
   let qi = 0;
   async function worker() {
     while (qi < _kanaRows.length) {
       const idx = qi++;
       const row = _kanaRows[idx];
       try {
-        const res = await fetch(`${API}/audio_query?text=${encodeURIComponent(row.text)}&speaker_id=${speakerId}`, { method: 'POST' });
+        const res = await fetch(
+          `${API}/audio_query?text=${encodeURIComponent(row.text)}&speaker_id=${speakerId}`,
+          { method: 'POST' }
+        );
         if (!res.ok) throw new Error(res.status);
         row.kana = kanaExtractKana(await res.json());
       } catch(e) {
-        row.error = true;
-        row.kana = '（取得失敗）';
+        row.queryError = true;
+        row.kana = '';
       }
       kanaRenderRow(idx);
-      updateProgress();
+      done++;
+      document.getElementById('kanaProgressBar').style.width = `${Math.round(done / words.length * 100)}%`;
+      document.getElementById('kanaProgressText').textContent = `${done} / ${words.length}`;
     }
   }
   await Promise.all([worker(), worker(), worker()]);
 
   _kanaProcessing = false;
   document.getElementById('kanaStartBtn').disabled = false;
-  document.getElementById('kanaExportArea').style.display = 'flex';
-  document.getElementById('kanaCheckAll').checked = true;
-  kanaToggleAll(true);
 }
 
 function kanaRenderAll() {
   document.getElementById('kanaList').innerHTML = _kanaRows.map((_, i) => kanaRowHtml(i)).join('');
 }
-
 function kanaRenderRow(idx) {
   const el = document.getElementById(`kana-row-${idx}`);
   if (el) el.outerHTML = kanaRowHtml(idx);
@@ -3118,29 +3101,62 @@ function kanaRenderRow(idx) {
 function kanaRowHtml(idx) {
   const row = _kanaRows[idx];
   const loading = row.kana === null;
+
   const kanaCell = loading
-    ? `<span style="color:var(--text-muted);font-size:0.8rem;">処理中...</span>`
-    : `<span contenteditable="${row.error ? 'false' : 'true'}" id="kana-edit-${idx}"
-         style="outline:none;border-bottom:1px dashed ${row.error ? 'var(--error)' : 'var(--border)'};color:${row.error ? 'var(--error)' : 'inherit'};cursor:${row.error ? 'default' : 'text'};min-width:2rem;display:inline-block;"
-         oninput="_kanaRows[${idx}].kana=this.textContent.trim()"
-         onfocus="this.style.borderBottomColor='var(--accent)'"
-         onblur="this.style.borderBottomColor='${row.error ? 'var(--error)' : 'var(--border)'}'">` +
-       esc(row.kana) + `</span>`;
-  const playDisabled = loading || row.error;
-  return `<div id="kana-row-${idx}" style="display:grid;grid-template-columns:2rem 1fr 1fr 2.8rem;gap:0.4rem;align-items:center;padding:0.45rem 0.6rem;border-bottom:1px solid var(--border);">
-    <label style="display:flex;align-items:center;justify-content:center;">
-      <input type="checkbox" class="kana-check" data-idx="${idx}" ${(!loading && !row.error) ? 'checked' : ''} ${(loading || row.error) ? 'disabled' : ''}>
-    </label>
-    <span style="font-size:0.88rem;word-break:break-all;">${esc(row.text)}</span>
-    <span style="font-size:0.88rem;">${kanaCell}</span>
-    <button id="kana-play-${idx}" onclick="kanaPlayRow(this,${idx})"
-      style="${_histBtnStyle}${playDisabled ? 'opacity:0.35;pointer-events:none;' : ''}">▶</button>
+    ? `<span style="color:var(--text-muted);font-size:0.8rem;">取得中...</span>`
+    : row.queryError
+      ? `<span style="color:var(--error);font-size:0.8rem;">取得失敗</span>`
+      : `<span style="font-size:0.85rem;color:var(--text-muted);">${esc(row.kana) || '―'}</span>`;
+
+  const playBtn = `<button onclick="kanaPlay(this,${idx})"
+    style="${_histBtnStyle}${loading ? 'opacity:0.35;pointer-events:none;' : ''}">▶</button>`;
+
+  const fixBtn = loading ? '' :
+    `<button onclick="kanaToggleFix(${idx})"
+      style="${_histBtnStyle}color:var(--error);border-color:var(--error);">✗ 修正</button>`;
+
+  const fixPanel = `<div id="kana-fix-${idx}" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.8rem;margin-top:0.5rem;">
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.6rem;">
+      <strong style="color:var(--text);">${esc(row.text)}</strong> の修正方法を選択:
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+      <div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.3rem;">🔄 置換ルールに追加（テキストを別の読み方に置き換え）</div>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:0.82rem;white-space:nowrap;">${esc(row.text)} →</span>
+          <input id="kana-rep-dst-${idx}" type="text" value="${esc(row.kana)}"
+            placeholder="正しい読みを入力"
+            style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0.3rem 0.6rem;font-size:0.85rem;">
+          <button onclick="kanaAddReplacement(${idx})" style="${_histBtnStyle}">追加</button>
+        </div>
+        <div class="status" id="kana-rep-status-${idx}"></div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border);">
+      <div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.3rem;">📖 単語辞書に登録（正確なアクセントも設定できます）</div>
+        <button onclick="kanaGoToDict(${idx})" style="${_histBtnStyle}">単語辞書タブへ →</button>
+      </div>
+    </div>
+  </div>`;
+
+  return `<div id="kana-row-${idx}" style="border-bottom:1px solid var(--border);padding:0.5rem 0.8rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:0.5rem;align-items:center;">
+      <span style="font-size:0.88rem;word-break:break-all;">${esc(row.text)}</span>
+      ${kanaCell}
+      ${playBtn}
+      ${fixBtn}
+    </div>
+    ${fixPanel}
   </div>`;
 }
 
-async function kanaPlayRow(btn, idx) {
+function kanaToggleFix(idx) {
+  const panel = document.getElementById(`kana-fix-${idx}`);
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+}
+
+async function kanaPlay(btn, idx) {
   const row = _kanaRows[idx];
-  if (!row.kana || row.error) return;
   if (_kanaAudio) { _kanaAudio.pause(); _kanaAudio = null; }
   const speakerId = parseInt(document.getElementById('kanaSpeakerSelect').value);
   btn.textContent = '⏳';
@@ -3159,7 +3175,7 @@ async function kanaPlayRow(btn, idx) {
     _kanaAudio.play();
     _kanaAudio.onended = () => {
       btn.textContent = '▶';
-      btn.onclick = () => kanaPlayRow(btn, idx);
+      btn.onclick = () => kanaPlay(btn, idx);
       URL.revokeObjectURL(url);
       _kanaAudio = null;
     };
@@ -3168,58 +3184,42 @@ async function kanaPlayRow(btn, idx) {
       URL.revokeObjectURL(url);
       _kanaAudio = null;
       btn.textContent = '▶';
-      btn.onclick = () => kanaPlayRow(btn, idx);
+      btn.onclick = () => kanaPlay(btn, idx);
     };
   } catch(e) {
     btn.textContent = '✗';
     btn.disabled = false;
-    setTimeout(() => { btn.textContent = '▶'; btn.onclick = () => kanaPlayRow(btn, idx); }, 1500);
+    setTimeout(() => { btn.textContent = '▶'; btn.onclick = () => kanaPlay(btn, idx); }, 1500);
   }
 }
 
-function kanaToggleAll(checked) {
-  document.querySelectorAll('.kana-check:not([disabled])').forEach(cb => cb.checked = checked);
-}
-
-function kanaGetSelected() {
-  const result = [];
-  document.querySelectorAll('.kana-check:checked').forEach(cb => {
-    const idx = parseInt(cb.dataset.idx);
-    const row = _kanaRows[idx];
-    const editEl = document.getElementById(`kana-edit-${idx}`);
-    const kana = (editEl ? editEl.textContent.trim() : row.kana) || '';
-    if (row.text && kana) result.push({ src: row.text, dst: kana });
-  });
-  return result;
-}
-
-function kanaExportTxt() {
-  const selected = kanaGetSelected();
-  if (!selected.length) { alert('エクスポートする行を選択してください'); return; }
-  const blob = new Blob([selected.map(r => `${r.src}@${r.dst}`).join('\n')], { type: 'text/plain;charset=utf-8' });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'name.txt' });
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-async function kanaImportRules() {
-  const selected = kanaGetSelected();
-  if (!selected.length) { alert('追加する行を選択してください'); return; }
-  const statusEl = document.getElementById('kanaImportStatus');
-  statusEl.className = 'status';
-  const blob = new Blob([selected.map(r => `${r.src}@${r.dst}`).join('\n')], { type: 'text/plain;charset=utf-8' });
-  const form = new FormData();
-  form.append('file', blob, 'import.txt');
+async function kanaAddReplacement(idx) {
+  const row = _kanaRows[idx];
+  const dst = document.getElementById(`kana-rep-dst-${idx}`).value.trim();
+  const statusEl = document.getElementById(`kana-rep-status-${idx}`);
+  if (!dst) { statusEl.textContent = '置換後テキストを入力してください'; statusEl.className = 'status error'; return; }
   try {
-    const res = await fetch(`${API}/text_replacements/import`, { method: 'POST', body: form });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || '失敗');
-    statusEl.textContent = `✓ ${data.message}`;
+    const res = await fetch(`${API}/text_replacements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ src: row.text, dst }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    statusEl.textContent = `✓ 追加しました（${row.text} → ${dst}）`;
     statusEl.className = 'status success';
   } catch(e) {
     statusEl.textContent = `✗ ${e.message}`;
     statusEl.className = 'status error';
   }
+}
+
+function kanaGoToDict(idx) {
+  const row = _kanaRows[idx];
+  switchTab('dict');
+  document.getElementById('newSurface').value = row.text;
+  document.getElementById('newPronunciation').value = row.kana || '';
+  updateVizPron('addViz', row.kana || '');
+  document.getElementById('newSurface').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function populateKanaSpeakerSelect(speakers) {
