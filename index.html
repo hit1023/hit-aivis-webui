@@ -1406,6 +1406,10 @@
           <select id="kanaSpeakerSelect"><option value="">読み込み中...</option></select>
           <span class="select-arrow">▾</span>
         </div>
+        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--text-muted);cursor:pointer;white-space:nowrap;">
+          <input type="checkbox" id="kanaLlmCheck" style="cursor:pointer;">
+          LLMで読みを確認
+        </label>
         <button class="btn-primary" id="kanaStartBtn" onclick="kanaStart()">▶ 確認開始</button>
       </div>
     </div>
@@ -3007,6 +3011,7 @@ let _kanaProcessing = false;
 let _kanaRepRules = {};       // src→dst from /text_replacements
 let _kanaDictSurfaces = new Set(); // surface strings from /user_dict
 let _kanaLlmEnabled = null;   // null=未確認, true/false
+let _kanaLlmModel = '';
 
 function kanaDropOver(e) {
   e.preventDefault();
@@ -3128,25 +3133,29 @@ async function kanaStart() {
 async function kanaRunLlmVerify() {
   const statusEl = document.getElementById('kanaLlmStatus');
 
+  // チェックボックスがOFFならスキップ
+  if (!document.getElementById('kanaLlmCheck').checked) {
+    statusEl.textContent = '';
+    return;
+  }
+
   // LLM設定確認（初回のみ）
   if (_kanaLlmEnabled === null) {
     try {
       const r = await fetch(`${API}/kana_verify/status`);
       const s = await r.json();
       _kanaLlmEnabled = s.enabled;
+      _kanaLlmModel = s.model || '';
       if (!s.enabled) {
         statusEl.innerHTML = '🤖 LLM未設定 — <code style="font-size:0.75rem;">LLM_MODEL</code> 環境変数を設定すると読みの正誤を自動判定できます';
         return;
       }
-      statusEl.textContent = `🤖 ${s.model} で読みを確認中...`;
     } catch(e) {
       statusEl.textContent = '🤖 LLMステータス取得失敗';
       return;
     }
   } else if (!_kanaLlmEnabled) {
     return;
-  } else {
-    statusEl.textContent = '🤖 LLMで読みを確認中...';
   }
 
   const validRows = _kanaRows.filter(r => !r.queryError && r.kana !== null);
@@ -3156,7 +3165,7 @@ async function kanaRunLlmVerify() {
   let done = 0;
   for (let i = 0; i < validRows.length; i += BATCH) {
     const batch = validRows.slice(i, i + BATCH);
-    statusEl.textContent = `🤖 LLMで確認中... ${done} / ${validRows.length}`;
+    statusEl.textContent = `🤖 ${_kanaLlmModel} で確認中... ${done} / ${validRows.length}`;
     try {
       const res = await fetch(`${API}/kana_verify`, {
         method: 'POST',
@@ -3181,7 +3190,7 @@ async function kanaRunLlmVerify() {
     }
   }
   const wrong = _kanaRows.filter(r => r.llm && !r.llm.correct).length;
-  statusEl.textContent = `🤖 LLM確認完了 — ${validRows.length}件中 ${wrong}件に問題あり`;
+  statusEl.textContent = `🤖 ${_kanaLlmModel} — ${validRows.length}件中 ${wrong}件に問題あり`;
 }
 
 function kanaRenderAll() {
