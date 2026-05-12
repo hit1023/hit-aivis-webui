@@ -1296,12 +1296,20 @@
 
     <!-- ファイルインポート -->
     <div class="card">
-      <div class="card-title">ファイルからインポート（UPSERT）</div>
-      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
+      <div class="card-title">ファイルからインポート</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.8rem;line-height:1.6">
         <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px">src@dst</code>
-        形式のテキストファイル（UTF-8）をアップロードします。<br>
-        既存の <em>src</em> は上書き、新規は追加されます。<code>name.txt</code> と同じ形式です。
+        形式のテキストファイル（UTF-8）をアップロードします。<code>name.txt</code> と同じ形式です。
       </p>
+      <div style="display:flex;gap:1.2rem;margin-bottom:1rem;font-size:0.85rem;">
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+          <input type="radio" name="repImportMode" value="upsert" checked> UPSERT（追加・上書き）
+        </label>
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+          <input type="radio" name="repImportMode" value="replace">
+          <span style="color:var(--error);">フルリプレース（全削除して置き換え）</span>
+        </label>
+      </div>
       <div id="repImportDrop"
         ondragover="repImportDragOver(event)" ondragleave="repImportDragLeave(event)" ondrop="repImportDrop(event)"
         style="border:2px dashed var(--border);border-radius:8px;padding:1.2rem;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;"
@@ -2802,8 +2810,15 @@ async function repImportRun() {
   statusEl.className = 'status';
 
   try {
+    const mode = document.querySelector('input[name="repImportMode"]:checked').value;
+    if (mode === 'replace' && !confirm('既存のルールを全て削除してファイルの内容で置き換えます。よろしいですか？')) {
+      btn.disabled = false;
+      btn.textContent = '⬆ インポート';
+      return;
+    }
     const form = new FormData();
     form.append('file', _repImportFile);
+    form.append('mode', mode);
     const res = await fetch(`${API}/text_replacements/import`, { method: 'POST', body: form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'インポート失敗');
