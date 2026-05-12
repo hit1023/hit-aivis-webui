@@ -2362,7 +2362,7 @@ function renderDict() {
     const pronArr = Array.isArray(w.pronunciation) ? w.pronunciation : [w.pronunciation || '—'];
     const atArr   = Array.isArray(w.accent_type)   ? w.accent_type   : [w.accent_type ?? 0];
     const isCompound = pronArr.length > 1;
-    const pron = pronArr.join('');
+    const pron = pronArr.join(isCompound ? '|' : '');
     const wordType = resolveWordType(w);
     const label = resolveWordTypeLabel(w);
     const priority = w.priority ?? 5;
