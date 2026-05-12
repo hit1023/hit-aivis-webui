@@ -3208,13 +3208,18 @@ function kanaRowHtml(idx) {
   // LLM判定バッジ
   let llmBadge = '';
   if (!loading && row.llm) {
+    const reading = row.llm.reading || '';
+    const note = row.llm.note || '';
+    const tip = note ? `LLM読み: ${reading}${note ? ' — ' + note : ''}` : `LLM読み: ${reading}`;
     if (row.llm.correct) {
-      llmBadge = `<span title="LLM: 正しい読みです" style="color:#4caf50;font-size:1rem;cursor:default;">✓</span>`;
+      llmBadge = `<span title="${esc(tip)}" style="display:inline-flex;flex-direction:column;align-items:center;gap:0.1rem;cursor:default;">
+        <span style="color:#4caf50;font-size:0.85rem;font-weight:600;">✓</span>
+        ${reading ? `<span style="font-size:0.68rem;color:var(--text-muted);white-space:nowrap;">${esc(reading)}</span>` : ''}
+      </span>`;
     } else {
-      const tip = [row.llm.suggested, row.llm.note].filter(Boolean).join(' — ');
       llmBadge = `<span title="${esc(tip)}" style="display:inline-flex;flex-direction:column;align-items:center;gap:0.1rem;cursor:default;">
         <span style="color:var(--error);font-size:0.85rem;font-weight:600;">✗</span>
-        ${row.llm.suggested ? `<span style="font-size:0.68rem;color:var(--error);white-space:nowrap;">${esc(row.llm.suggested)}</span>` : ''}
+        ${reading ? `<span style="font-size:0.68rem;color:var(--error);white-space:nowrap;">${esc(reading)}</span>` : ''}
       </span>`;
     }
   } else if (!loading && _kanaLlmEnabled === false) {
