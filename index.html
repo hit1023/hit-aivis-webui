@@ -465,6 +465,13 @@
     color: var(--success);
   }
 
+  .status.warning {
+    display: block;
+    background: rgba(255,190,50,0.1);
+    border: 1px solid rgba(255,190,50,0.3);
+    color: #ffbe32;
+  }
+
   /* VRAM */
   .vram-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 
@@ -1234,6 +1241,38 @@
         <button class="btn-primary" id="addWordBtn" onclick="addWord()">＋ 追加する</button>
       </div>
       <div class="status" id="dictStatus"></div>
+    </div>
+
+    <!-- CSVインポート -->
+    <div class="card">
+      <div class="card-title">CSVファイルからインポート</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.8rem;line-height:1.6">
+        UTF-8 CSV形式でまとめて登録できます。同じ表層形の単語は上書き（UPSERT）されます。
+      </p>
+      <details style="margin-bottom:0.9rem">
+        <summary style="cursor:pointer;font-size:0.82rem;color:var(--text-muted);user-select:none">フォーマット例を見る ▾</summary>
+        <pre style="margin-top:0.6rem;padding:0.7rem 1rem;background:var(--surface2);border-radius:6px;font-size:0.78rem;line-height:1.7;overflow-x:auto"># 表層形,読み,アクセント,品詞,優先度
+東京スカイツリー,トウキョウスカイツリー,5,固有名詞,5
+堀田創,ホッタハジメ,3,人名,7
+新田|真剣佑,アラタ|マッケンユウ,1|3,人名,7
+# 品詞・優先度は省略可（デフォルト: 固有名詞 / 5）
+# 複合語は | で各形態素を区切る</pre>
+        <button onclick="dictImportDownloadTemplate()" class="btn-ghost" style="margin-top:0.4rem;font-size:0.8rem">⬇ テンプレートをダウンロード</button>
+      </details>
+
+      <div id="dictImportDrop"
+        ondragover="dictImportDragOver(event)" ondragleave="dictImportDragLeave(event)" ondrop="dictImportDrop(event)"
+        style="border:2px dashed var(--border);border-radius:8px;padding:1.2rem;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;"
+        onclick="document.getElementById('dictImportFile').click()">
+        <div style="font-size:0.85rem;color:var(--text-muted)">クリックまたはドロップで CSV ファイルを選択</div>
+        <div id="dictImportFileName" style="margin-top:0.4rem;font-size:0.8rem;color:var(--primary)"></div>
+      </div>
+      <input type="file" id="dictImportFile" accept=".csv,.txt" style="display:none" onchange="dictImportFileSelected(this)">
+
+      <div style="display:flex;justify-content:flex-end;margin-top:0.8rem">
+        <button class="btn-primary" id="dictImportBtn" onclick="dictImportRun()" disabled>⬆ インポート</button>
+      </div>
+      <div class="status" id="dictImportStatus"></div>
     </div>
 
     <!-- 単語一覧 -->
@@ -2827,6 +2866,96 @@ async function repImportRun() {
     statusEl.className = 'status success';
     repImportClear();
     loadReplacements();
+  } catch(e) {
+    statusEl.textContent = `✗ ${e.message}`;
+    statusEl.className = 'status error';
+    btn.disabled = false;
+  } finally {
+    btn.textContent = '⬆ インポート';
+  }
+}
+
+// ==========================================
+//  単語辞書インポート
+// ==========================================
+let _dictImportFile = null;
+
+function dictImportDragOver(e) {
+  e.preventDefault();
+  const el = document.getElementById('dictImportDrop');
+  el.style.borderColor = 'var(--accent)';
+  el.style.background = 'rgba(79,142,255,0.05)';
+}
+
+function dictImportDragLeave(e) {
+  const el = document.getElementById('dictImportDrop');
+  el.style.borderColor = 'var(--border)';
+  el.style.background = '';
+}
+
+function dictImportDrop(e) {
+  e.preventDefault();
+  dictImportDragLeave(e);
+  const file = e.dataTransfer.files[0];
+  if (file) dictImportSetFile(file);
+}
+
+function dictImportFileSelected(input) {
+  const file = input.files[0];
+  if (file) dictImportSetFile(file);
+}
+
+function dictImportSetFile(file) {
+  _dictImportFile = file;
+  document.getElementById('dictImportFileName').textContent = `📄 ${file.name}  (${(file.size / 1024).toFixed(1)} KB)`;
+  document.getElementById('dictImportBtn').disabled = false;
+  document.getElementById('dictImportStatus').className = 'status';
+}
+
+function dictImportDownloadTemplate() {
+  const csv = [
+    '# 表層形,読み,アクセント,品詞,優先度',
+    '東京スカイツリー,トウキョウスカイツリー,5,固有名詞,5',
+    '堀田創,ホッタハジメ,3,人名,7',
+    '新田|真剣佑,アラタ|マッケンユウ,1|3,人名,7',
+    '# 品詞・優先度は省略可（デフォルト: 固有名詞 / 5）',
+    '# 複合語は | で各形態素を区切る（表層形・読み・アクセントの数を一致させること）',
+  ].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'dict_template.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function dictImportRun() {
+  if (!_dictImportFile) return;
+  const btn = document.getElementById('dictImportBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ インポート中...';
+  const statusEl = document.getElementById('dictImportStatus');
+  statusEl.className = 'status';
+
+  try {
+    const form = new FormData();
+    form.append('file', _dictImportFile);
+    const res = await fetch(`${API}/user_dict/import`, { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'インポート失敗');
+
+    let msg = `✓ 追加 ${data.inserted} 件 / 更新 ${data.updated} 件`;
+    if (data.errors && data.errors.length) {
+      msg += ` / エラー ${data.errors.length} 件`;
+      statusEl.className = 'status warning';
+      console.warn('dictImport errors:', data.errors);
+    } else {
+      statusEl.className = 'status success';
+    }
+    statusEl.textContent = msg;
+    _dictImportFile = null;
+    document.getElementById('dictImportFileName').textContent = '';
+    document.getElementById('dictImportFile').value = '';
+    loadDict();
   } catch(e) {
     statusEl.textContent = `✗ ${e.message}`;
     statusEl.className = 'status error';
