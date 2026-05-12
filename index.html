@@ -3205,21 +3205,21 @@ function kanaRowHtml(idx) {
            ${sourceBadges ? `<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">${sourceBadges}</div>` : ''}
          </div>`;
 
-  // LLM判定バッジ
+  // LLM判定バッジ（1行: アイコン + 読み）
   let llmBadge = '';
   if (!loading && row.llm) {
     const reading = row.llm.reading || '';
     const note = row.llm.note || '';
-    const tip = note ? `LLM読み: ${reading}${note ? ' — ' + note : ''}` : `LLM読み: ${reading}`;
+    const tip = [reading, note].filter(Boolean).join(' — ');
     if (row.llm.correct) {
-      llmBadge = `<span title="${esc(tip)}" style="display:inline-flex;flex-direction:column;align-items:center;gap:0.1rem;cursor:default;">
-        <span style="color:#4caf50;font-size:0.85rem;font-weight:600;">✓</span>
-        ${reading ? `<span style="font-size:0.68rem;color:var(--text-muted);white-space:nowrap;">${esc(reading)}</span>` : ''}
+      llmBadge = `<span title="${esc(tip)}" style="display:inline-flex;align-items:center;gap:0.3rem;cursor:default;white-space:nowrap;">
+        <span style="color:#4caf50;font-weight:600;">✓</span>
+        ${reading ? `<span style="font-size:0.78rem;color:var(--text-muted);">${esc(reading)}</span>` : ''}
       </span>`;
     } else {
-      llmBadge = `<span title="${esc(tip)}" style="display:inline-flex;flex-direction:column;align-items:center;gap:0.1rem;cursor:default;">
-        <span style="color:var(--error);font-size:0.85rem;font-weight:600;">✗</span>
-        ${reading ? `<span style="font-size:0.68rem;color:var(--error);white-space:nowrap;">${esc(reading)}</span>` : ''}
+      llmBadge = `<span title="${esc(tip)}" style="display:inline-flex;align-items:center;gap:0.3rem;cursor:default;white-space:nowrap;">
+        <span style="color:var(--error);font-weight:600;">✗</span>
+        ${reading ? `<span style="font-size:0.78rem;color:var(--error);">${esc(reading)}</span>` : ''}
       </span>`;
     }
   } else if (!loading && _kanaLlmEnabled === false) {
