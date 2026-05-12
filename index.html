@@ -2401,13 +2401,8 @@ function renderDict() {
       <div class="word-edit-form" id="wedit-${uuid}">
         <div class="edit-grid">
           <div class="form-group">
-            <label>表層形</label>
+            <label>表層形${isCompound ? ' <span style="font-size:0.75rem;color:var(--primary)">（| で形態素を区切る）</span>' : ''}</label>
             <input type="text" id="es-${uuid}" value="${esc(surfaceDisplay)}">
-          </div>
-          <div class="form-group">
-            <label>読み（カタカナ）</label>
-            <input type="text" id="ep-${uuid}" value="${esc(pron)}"
-                   oninput="this.value=toKatakana(this.value); updateVizPron('eviz-${uuid}', this.value)">
           </div>
           <div class="form-group">
             <label>品詞</label>
@@ -2423,10 +2418,25 @@ function renderDict() {
             <label>優先度（0〜10）</label>
             <input type="number" id="epr-${uuid}" min="0" max="10" value="${priority}">
           </div>
-          <div class="form-group form-row-full">
-            <label>アクセント</label>
-            <div id="eviz-${uuid}"></div>
-          </div>
+          ${isCompound
+            ? pronArr.map((p, i) => `
+              <div class="form-group form-row-full" style="border-left:2px solid var(--primary);padding-left:0.8rem">
+                <label style="font-size:0.8rem;color:var(--text-muted)">形態素 ${i+1}：${esc(splitList?.[i] || p)} — 読み・アクセント</label>
+                <input type="text" id="ep-${uuid}-${i}" value="${esc(p)}" style="margin-bottom:0.5rem"
+                       oninput="this.value=toKatakana(this.value); updateVizPron('eviz-${uuid}-${i}', this.value)">
+                <div id="eviz-${uuid}-${i}"></div>
+              </div>`).join('')
+            : `
+              <div class="form-group">
+                <label>読み（カタカナ）</label>
+                <input type="text" id="ep-${uuid}" value="${esc(pron)}"
+                       oninput="this.value=toKatakana(this.value); updateVizPron('eviz-${uuid}', this.value)">
+              </div>
+              <div class="form-group form-row-full">
+                <label>アクセント</label>
+                <div id="eviz-${uuid}"></div>
+              </div>`
+          }
         </div>
         <div class="edit-actions">
           <button class="btn-ghost" onclick="toggleEdit('${uuid}')">キャンセル</button>
@@ -2454,11 +2464,15 @@ function toggleEdit(uuid) {
   document.querySelectorAll('.word-row.editing').forEach(r => r.classList.remove('editing'));
   if (!isEditing) {
     row.classList.add('editing');
-    // アクセントビジュアライザーを初期化
     const w = _dictData[uuid];
-    const pron = Array.isArray(w.pronunciation) ? w.pronunciation.join('') : (w.pronunciation || '');
-    const at = Array.isArray(w.accent_type) ? (w.accent_type[0] ?? 0) : (w.accent_type ?? 0);
-    initViz(`eviz-${uuid}`, pron, at);
+    const pronArr = Array.isArray(w.pronunciation) ? w.pronunciation : [w.pronunciation || ''];
+    const atArr   = Array.isArray(w.accent_type)   ? w.accent_type   : [w.accent_type ?? 0];
+    const isComp  = pronArr.length > 1 || !!_compoundSplits[w.surface || ''];
+    if (isComp) {
+      pronArr.forEach((p, i) => initViz(`eviz-${uuid}-${i}`, p, atArr[i] ?? 0));
+    } else {
+      initViz(`eviz-${uuid}`, pronArr[0] || '', atArr[0] ?? 0);
+    }
   }
 }
 
@@ -2515,13 +2529,25 @@ function clearAddForm() {
 
 // 単語更新
 async function updateWord(uuid) {
-  const surface = document.getElementById(`es-${uuid}`).value.trim();
-  const pronunciation = document.getElementById(`ep-${uuid}`).value.trim();
-  const wordType = document.getElementById(`ew-${uuid}`).value;
-  const priority = parseInt(document.getElementById(`epr-${uuid}`).value) || 5;
-  const at = (_viz[`eviz-${uuid}`]?.accentType) ?? 0;
+  const surfaceRaw = document.getElementById(`es-${uuid}`).value.trim();
+  const wordType   = document.getElementById(`ew-${uuid}`).value;
+  const priority   = parseInt(document.getElementById(`epr-${uuid}`).value) || 5;
 
-  if (!surface || !pronunciation) {
+  const surfaceList = surfaceRaw.split('|').map(s => s.trim()).filter(Boolean);
+  const isCompound  = surfaceList.length > 1;
+
+  let pronunciationList, accentList;
+  if (isCompound) {
+    pronunciationList = surfaceList.map((_, i) =>
+      (document.getElementById(`ep-${uuid}-${i}`)?.value || '').trim()
+    );
+    accentList = surfaceList.map((_, i) => (_viz[`eviz-${uuid}-${i}`]?.accentType) ?? 0);
+  } else {
+    pronunciationList = [(document.getElementById(`ep-${uuid}`)?.value || '').trim()];
+    accentList        = [(_viz[`eviz-${uuid}`]?.accentType) ?? 0];
+  }
+
+  if (!surfaceRaw || pronunciationList.some(p => !p)) {
     showDictStatus('表層形・読みは必須です', 'error'); return;
   }
 
@@ -2534,9 +2560,9 @@ async function updateWord(uuid) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        surface: [surface],
-        pronunciation: [pronunciation],
-        accent_type: [at],
+        surface: surfaceList,
+        pronunciation: pronunciationList,
+        accent_type: accentList,
         word_type: wordType,
         priority,
       }),
