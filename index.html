@@ -3284,7 +3284,7 @@ function kanaRowHtml(idx) {
     </div>
   </div>`;
 
-  const rowBg = (!loading && row.llm && !row.llm.correct)
+  const rowBg = (!loading && row.llm && !row.llm.skipped && !row.llm.correct)
     ? 'background:rgba(220,50,50,0.07);'
     : '';
   return `<div id="kana-row-${idx}" style="border-bottom:1px solid var(--border);padding:0.5rem 0.8rem;${rowBg}">
