@@ -3158,8 +3158,16 @@ async function kanaRunLlmVerify() {
     return;
   }
 
-  const validRows = _kanaRows.filter(r => !r.queryError && r.kana !== null);
-  if (!validRows.length) { statusEl.textContent = ''; return; }
+  // 置換/辞書設定済みの行はスキップマークを付けてLLM対象外に
+  for (const row of _kanaRows) {
+    if (!row.queryError && row.kana !== null && (row.sources || []).length > 0) {
+      row.llm = { skipped: true };
+    }
+  }
+  kanaRenderAll();
+
+  const validRows = _kanaRows.filter(r => !r.queryError && r.kana !== null && !(r.sources || []).length);
+  if (!validRows.length) { statusEl.textContent = `🤖 ${_kanaLlmModel} — LLM対象なし（全件設定済み）`; return; }
 
   const BATCH = 10;
   let done = 0;
@@ -3222,7 +3230,9 @@ function kanaRowHtml(idx) {
 
   // LLM判定バッジ（1行: アイコン + 読み）
   let llmBadge = '';
-  if (!loading && row.llm) {
+  if (!loading && row.llm && row.llm.skipped) {
+    llmBadge = `<span style="font-size:0.72rem;color:var(--text-muted);opacity:0.6;">設定済み</span>`;
+  } else if (!loading && row.llm) {
     const reading = row.llm.reading || '';
     const note = row.llm.note || '';
     const tip = [reading, note].filter(Boolean).join(' — ');
