@@ -1416,12 +1416,13 @@
         <div class="card-title" style="margin-bottom:0;flex:1;">読み確認</div>
         <span id="kanaProgressText" style="font-size:0.8rem;color:var(--text-muted);"></span>
       </div>
-      <div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:1rem;overflow:hidden;">
+      <div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:0.6rem;overflow:hidden;">
         <div id="kanaProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.3s;"></div>
       </div>
+      <div id="kanaLlmStatus" style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.8rem;min-height:1.2em;"></div>
       <!-- ヘッダ -->
-      <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:0.4rem;padding:0.35rem 0.8rem;font-size:0.73rem;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:0.3rem;">
-        <span>単語</span><span>AivisSpeechの読み</span><span>再生</span><span>判定</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto auto auto;gap:0.4rem;padding:0.35rem 0.8rem;font-size:0.73rem;color:var(--text-muted);border-bottom:1px solid var(--border);margin-bottom:0.3rem;">
+        <span>単語</span><span>AivisSpeechの読み</span><span>LLM</span><span>再生</span><span>判定</span>
       </div>
       <div id="kanaList"></div>
     </div>
@@ -3000,11 +3001,12 @@ function populateHistSpeakerFilter(speakers) {
 // ==========================================
 //  読みチェック
 // ==========================================
-let _kanaRows = [];   // { text, kana, queryError, sources }
+let _kanaRows = [];   // { text, kana, queryError, sources, llm }
 let _kanaAudio = null;
 let _kanaProcessing = false;
 let _kanaRepRules = {};       // src→dst from /text_replacements
 let _kanaDictSurfaces = new Set(); // surface strings from /user_dict
+let _kanaLlmEnabled = null;   // null=未確認, true/false
 
 function kanaDropOver(e) {
   e.preventDefault();
@@ -3116,8 +3118,64 @@ async function kanaStart() {
   }
   await Promise.all([worker(), worker(), worker()]);
 
+  // LLM読み判定
+  await kanaRunLlmVerify();
+
   _kanaProcessing = false;
   document.getElementById('kanaStartBtn').disabled = false;
+}
+
+async function kanaRunLlmVerify() {
+  const statusEl = document.getElementById('kanaLlmStatus');
+
+  // LLM設定確認（初回のみ）
+  if (_kanaLlmEnabled === null) {
+    try {
+      const r = await fetch(`${API}/kana_verify/status`);
+      const s = await r.json();
+      _kanaLlmEnabled = s.enabled;
+      if (!s.enabled) {
+        statusEl.innerHTML = '🤖 LLM未設定 — <code style="font-size:0.75rem;">LLM_MODEL</code> 環境変数を設定すると読みの正誤を自動判定できます';
+        return;
+      }
+      statusEl.textContent = `🤖 ${s.model} で読みを確認中...`;
+    } catch(e) {
+      statusEl.textContent = '🤖 LLMステータス取得失敗';
+      return;
+    }
+  } else if (!_kanaLlmEnabled) {
+    return;
+  } else {
+    statusEl.textContent = '🤖 LLMで読みを確認中...';
+  }
+
+  const validRows = _kanaRows.filter(r => !r.queryError && r.kana !== null);
+  if (!validRows.length) { statusEl.textContent = ''; return; }
+
+  try {
+    const res = await fetch(`${API}/kana_verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validRows.map(r => ({ text: r.text, kana: r.kana }))),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      statusEl.textContent = `🤖 LLMエラー: ${err.detail || res.status}`;
+      return;
+    }
+    const results = await res.json();
+    // textをキーにして結果をマージ
+    const resultMap = {};
+    for (const r of results) resultMap[r.text] = r;
+    for (const row of _kanaRows) {
+      if (resultMap[row.text]) row.llm = resultMap[row.text];
+    }
+    kanaRenderAll();
+    const wrong = results.filter(r => !r.correct).length;
+    statusEl.textContent = `🤖 LLM確認完了 — ${results.length}件中 ${wrong}件に問題あり`;
+  } catch(e) {
+    statusEl.textContent = `🤖 LLMエラー: ${e.message}`;
+  }
 }
 
 function kanaRenderAll() {
@@ -3146,6 +3204,24 @@ function kanaRowHtml(idx) {
            <span style="font-size:0.85rem;color:var(--text-muted);">${esc(row.kana) || '―'}</span>
            ${sourceBadges ? `<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">${sourceBadges}</div>` : ''}
          </div>`;
+
+  // LLM判定バッジ
+  let llmBadge = '';
+  if (!loading && row.llm) {
+    if (row.llm.correct) {
+      llmBadge = `<span title="LLM: 正しい読みです" style="color:#4caf50;font-size:1rem;cursor:default;">✓</span>`;
+    } else {
+      const tip = [row.llm.suggested, row.llm.note].filter(Boolean).join(' — ');
+      llmBadge = `<span title="${esc(tip)}" style="display:inline-flex;flex-direction:column;align-items:center;gap:0.1rem;cursor:default;">
+        <span style="color:var(--error);font-size:0.85rem;font-weight:600;">✗</span>
+        ${row.llm.suggested ? `<span style="font-size:0.68rem;color:var(--error);white-space:nowrap;">${esc(row.llm.suggested)}</span>` : ''}
+      </span>`;
+    }
+  } else if (!loading && _kanaLlmEnabled === false) {
+    llmBadge = `<span style="color:var(--text-muted);font-size:0.75rem;">—</span>`;
+  } else if (!loading) {
+    llmBadge = `<span style="color:var(--text-muted);font-size:0.75rem;">…</span>`;
+  }
 
   const playBtn = `<button onclick="kanaPlay(this,${idx})"
     style="${_histBtnStyle}${loading ? 'opacity:0.35;pointer-events:none;' : ''}">▶</button>`;
@@ -3179,9 +3255,10 @@ function kanaRowHtml(idx) {
   </div>`;
 
   return `<div id="kana-row-${idx}" style="border-bottom:1px solid var(--border);padding:0.5rem 0.8rem;">
-    <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:0.5rem;align-items:center;">
+    <div style="display:grid;grid-template-columns:1fr 1fr auto auto auto;gap:0.5rem;align-items:center;">
       <span style="font-size:0.88rem;word-break:break-all;">${esc(row.text)}</span>
       ${kanaCell}
+      <div style="display:flex;align-items:center;justify-content:center;min-width:2rem;">${llmBadge}</div>
       ${playBtn}
       ${fixBtn}
     </div>
