@@ -3152,30 +3152,36 @@ async function kanaRunLlmVerify() {
   const validRows = _kanaRows.filter(r => !r.queryError && r.kana !== null);
   if (!validRows.length) { statusEl.textContent = ''; return; }
 
-  try {
-    const res = await fetch(`${API}/kana_verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(validRows.map(r => ({ text: r.text, kana: r.kana }))),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      statusEl.textContent = `🤖 LLMエラー: ${err.detail || res.status}`;
+  const BATCH = 10;
+  let done = 0;
+  for (let i = 0; i < validRows.length; i += BATCH) {
+    const batch = validRows.slice(i, i + BATCH);
+    statusEl.textContent = `🤖 LLMで確認中... ${done} / ${validRows.length}`;
+    try {
+      const res = await fetch(`${API}/kana_verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batch.map(r => ({ text: r.text, kana: r.kana }))),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        statusEl.textContent = `🤖 LLMエラー: ${err.detail || res.status}`;
+        return;
+      }
+      const results = await res.json();
+      for (const r of results) {
+        const row = _kanaRows.find(row => row.text === r.text);
+        if (row) row.llm = r;
+      }
+      done += batch.length;
+      kanaRenderAll();
+    } catch(e) {
+      statusEl.textContent = `🤖 LLMエラー: ${e.message}`;
       return;
     }
-    const results = await res.json();
-    // textをキーにして結果をマージ
-    const resultMap = {};
-    for (const r of results) resultMap[r.text] = r;
-    for (const row of _kanaRows) {
-      if (resultMap[row.text]) row.llm = resultMap[row.text];
-    }
-    kanaRenderAll();
-    const wrong = results.filter(r => !r.correct).length;
-    statusEl.textContent = `🤖 LLM確認完了 — ${results.length}件中 ${wrong}件に問題あり`;
-  } catch(e) {
-    statusEl.textContent = `🤖 LLMエラー: ${e.message}`;
   }
+  const wrong = _kanaRows.filter(r => r.llm && !r.llm.correct).length;
+  statusEl.textContent = `🤖 LLM確認完了 — ${validRows.length}件中 ${wrong}件に問題あり`;
 }
 
 function kanaRenderAll() {
