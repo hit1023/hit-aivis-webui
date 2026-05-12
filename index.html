@@ -1203,8 +1203,8 @@
         </div>
         <div class="form-group">
           <label>読み（カタカナ） <span style="color:var(--error)">*</span></label>
-          <input type="text" id="newPronunciation" placeholder="トウキョウスカイツリー"
-                 oninput="this.value=toKatakana(this.value); updateVizPron('addViz', this.value)">
+          <input type="text" id="newPronunciation" placeholder="トウキョウスカイツリー（複合語は｜区切り）"
+                 oninput="this.value=toKatakanaWithPipe(this.value); updateAddViz(this.value)">
         </div>
         <div class="form-group">
           <label>品詞</label>
@@ -2146,6 +2146,47 @@ function toKatakana(str) {
   );
 }
 
+function toKatakanaWithPipe(str) {
+  return str.split('|').map(toKatakana).join('|');
+}
+
+function updateAddViz(pron) {
+  const parts = pron.split('|').map(p => p.trim()).filter(Boolean);
+  const container = document.getElementById('addViz');
+  if (!container) return;
+  if (parts.length <= 1) {
+    // Single morpheme: reuse addViz-0 or addViz
+    if (_viz['addViz-0']) {
+      // Clean up multi-viz state
+      container.innerHTML = '';
+      Object.keys(_viz).filter(k => k.startsWith('addViz-')).forEach(k => delete _viz[k]);
+      initViz('addViz', parts[0] || '', 0);
+    } else {
+      updateVizPron('addViz', parts[0] || pron);
+    }
+  } else {
+    // Multi-morpheme: render N viz containers
+    const prevCount = Object.keys(_viz).filter(k => k.startsWith('addViz-')).length;
+    if (prevCount !== parts.length) {
+      // Rebuild layout
+      if (_viz['addViz']) delete _viz['addViz'];
+      Object.keys(_viz).filter(k => k.startsWith('addViz-')).forEach(k => delete _viz[k]);
+      container.innerHTML = parts.map((p, i) =>
+        `<div style="margin-bottom:0.6rem"><div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.3rem">形態素 ${i+1}：${esc(p)}</div><div id="addViz-${i}"></div></div>`
+      ).join('');
+      parts.forEach((p, i) => initViz(`addViz-${i}`, p, 0));
+    } else {
+      // Just update morae
+      parts.forEach((p, i) => updateVizPron(`addViz-${i}`, p));
+      // Update labels
+      parts.forEach((p, i) => {
+        const lbl = container.querySelector(`#addViz-${i}`)?.previousElementSibling;
+        if (lbl) lbl.textContent = `形態素 ${i+1}：${p}`;
+      });
+    }
+  }
+}
+
 // モーラに分割（拗音・促音を前の文字に結合）
 function splitMora(kata) {
   const small = new Set([...'ァィゥェォャュョッヮヵヶ']);
@@ -2478,14 +2519,29 @@ function toggleEdit(uuid) {
 
 // 単語追加
 async function addWord() {
-  const surface = document.getElementById('newSurface').value.trim();
-  const pronunciation = document.getElementById('newPronunciation').value.trim();
-  const wordType = document.getElementById('newWordType').value;
-  const priority = parseInt(document.getElementById('newPriority').value) || 5;
-  const at = (_viz['addViz']?.accentType) ?? 0;
+  const surfaceRaw = document.getElementById('newSurface').value.trim();
+  const pronRaw    = document.getElementById('newPronunciation').value.trim();
+  const wordType   = document.getElementById('newWordType').value;
+  const priority   = parseInt(document.getElementById('newPriority').value) || 5;
 
-  if (!surface) { showDictStatus('表層形を入力してください', 'error'); return; }
-  if (!pronunciation) { showDictStatus('読みを入力してください', 'error'); return; }
+  if (!surfaceRaw) { showDictStatus('表層形を入力してください', 'error'); return; }
+  if (!pronRaw)    { showDictStatus('読みを入力してください', 'error'); return; }
+
+  const surfaceList = surfaceRaw.split('|').map(s => s.trim()).filter(Boolean);
+  const pronList    = pronRaw.split('|').map(p => p.trim()).filter(Boolean);
+  const isCompound  = surfaceList.length > 1;
+
+  if (isCompound && surfaceList.length !== pronList.length) {
+    showDictStatus(`表層形（${surfaceList.length}個）と読み（${pronList.length}個）の形態素数が一致しません`, 'error');
+    return;
+  }
+
+  let accentList;
+  if (isCompound) {
+    accentList = pronList.map((_, i) => (_viz[`addViz-${i}`]?.accentType) ?? 0);
+  } else {
+    accentList = [(_viz['addViz']?.accentType) ?? 0];
+  }
 
   const btn = document.getElementById('addWordBtn');
   btn.disabled = true;
@@ -2496,10 +2552,10 @@ async function addWord() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        surface: [surface],
-        pronunciation: [pronunciation],
-        accent_type: [at],
-        word_type: wordType,
+        surface:       surfaceList,
+        pronunciation: pronList,
+        accent_type:   accentList,
+        word_type:     wordType,
         priority,
       }),
     });
@@ -2509,7 +2565,7 @@ async function addWord() {
     }
     clearAddForm();
     await loadDict();
-    showDictStatus(`✓ 「${surface}」を辞書に追加しました`, 'success');
+    showDictStatus(`✓ 「${surfaceRaw}」を辞書に追加しました`, 'success');
   } catch(e) {
     showDictStatus(`エラー: ${e.message}`, 'error');
   } finally {
@@ -2524,6 +2580,10 @@ function clearAddForm() {
   document.getElementById('newWordType').value = 'PROPER_NOUN';
   document.getElementById('newPriority').value = '5';
   document.getElementById('dictStatus').className = 'status';
+  // Reset compound viz state
+  Object.keys(_viz).filter(k => k.startsWith('addViz-')).forEach(k => delete _viz[k]);
+  const container = document.getElementById('addViz');
+  if (container) container.innerHTML = '';
   initViz('addViz', '', 0);
 }
 
@@ -3551,7 +3611,7 @@ function kanaGoToDict(idx) {
   switchTab('dict');
   document.getElementById('newSurface').value = row.text;
   document.getElementById('newPronunciation').value = row.kana || '';
-  updateVizPron('addViz', row.kana || '');
+  updateAddViz(row.kana || '');
   document.getElementById('newSurface').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
