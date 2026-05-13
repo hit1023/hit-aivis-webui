@@ -2359,7 +2359,7 @@ function showDictStatus(msg, type) {
   if (type === 'success') setTimeout(() => { el.className = 'status'; }, 3000);
 }
 
-let _compoundSplits = {}; // {結合表層形: ["新田", "真剣佑"]}
+let _compoundSplits = {}; // {結合表層形: {surface:[...], pronunciation:[...], accent_type:[...]}}
 
 async function loadDict() {
   const btn = document.getElementById('dictRefreshBtn');
@@ -2406,10 +2406,16 @@ function renderDict() {
 
   list.innerHTML = entries.map(([uuid, w]) => {
     const surface = w.surface || '';
-    const splitList = _compoundSplits[surface]; // e.g. ["新田","真剣佑"] or undefined
-    const surfaceDisplay = splitList ? splitList.join('|') : surface; // 編集フォーム用
-    const pronArr = Array.isArray(w.pronunciation) ? w.pronunciation : [w.pronunciation || '—'];
-    const atArr   = Array.isArray(w.accent_type)   ? w.accent_type   : [w.accent_type ?? 0];
+    const splitInfo = _compoundSplits[surface]; // {surface:[...], pronunciation:[...], accent_type:[...]}
+    const splitList = splitInfo?.surface; // e.g. ["新田","真剣佑"] or undefined
+    const surfaceDisplay = splitList ? splitList.join('|') : surface;
+    let pronArr = Array.isArray(w.pronunciation) ? w.pronunciation : [w.pronunciation || '—'];
+    let atArr   = Array.isArray(w.accent_type)   ? w.accent_type   : [w.accent_type ?? 0];
+    // AivisSpeechが結合読みを返す場合、compound_splitsの情報で復元
+    if (splitInfo?.pronunciation && pronArr.length === 1 && splitInfo.pronunciation.length > 1) {
+      pronArr = splitInfo.pronunciation;
+      atArr   = splitInfo.accent_type || atArr;
+    }
     const isCompound = pronArr.length > 1 || !!splitList;
     const pron = pronArr.join(isCompound ? '|' : '');
     const wordType = resolveWordType(w);
@@ -2506,9 +2512,14 @@ function toggleEdit(uuid) {
   if (!isEditing) {
     row.classList.add('editing');
     const w = _dictData[uuid];
-    const pronArr = Array.isArray(w.pronunciation) ? w.pronunciation : [w.pronunciation || ''];
-    const atArr   = Array.isArray(w.accent_type)   ? w.accent_type   : [w.accent_type ?? 0];
-    const isComp  = pronArr.length > 1 || !!_compoundSplits[w.surface || ''];
+    let pronArr = Array.isArray(w.pronunciation) ? w.pronunciation : [w.pronunciation || ''];
+    let atArr   = Array.isArray(w.accent_type)   ? w.accent_type   : [w.accent_type ?? 0];
+    const splitInfo = _compoundSplits[w.surface || ''];
+    if (splitInfo?.pronunciation && pronArr.length === 1 && splitInfo.pronunciation.length > 1) {
+      pronArr = splitInfo.pronunciation;
+      atArr   = splitInfo.accent_type || atArr;
+    }
+    const isComp = pronArr.length > 1 || !!splitInfo;
     if (isComp) {
       pronArr.forEach((p, i) => initViz(`eviz-${uuid}-${i}`, p, atArr[i] ?? 0));
     } else {
