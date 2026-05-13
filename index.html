@@ -2406,7 +2406,9 @@ function renderDict() {
 
   list.innerHTML = entries.map(([uuid, w]) => {
     const surface = w.surface || '';
-    const splitInfo = _compoundSplits[surface]; // {surface:[...], pronunciation:[...], accent_type:[...]}
+    const _raw = _compoundSplits[surface];
+    // 旧形式（配列）・新形式（オブジェクト）どちらにも対応
+    const splitInfo = Array.isArray(_raw) ? {surface: _raw} : _raw;
     const splitList = splitInfo?.surface; // e.g. ["新田","真剣佑"] or undefined
     const surfaceDisplay = splitList ? splitList.join('|') : surface;
     let pronArr = Array.isArray(w.pronunciation) ? w.pronunciation : [w.pronunciation || '—'];
@@ -2514,7 +2516,8 @@ function toggleEdit(uuid) {
     const w = _dictData[uuid];
     let pronArr = Array.isArray(w.pronunciation) ? w.pronunciation : [w.pronunciation || ''];
     let atArr   = Array.isArray(w.accent_type)   ? w.accent_type   : [w.accent_type ?? 0];
-    const splitInfo = _compoundSplits[w.surface || ''];
+    const _rawSplit = _compoundSplits[w.surface || ''];
+    const splitInfo = Array.isArray(_rawSplit) ? {surface: _rawSplit} : _rawSplit;
     if (splitInfo?.pronunciation && pronArr.length === 1 && splitInfo.pronunciation.length > 1) {
       pronArr = splitInfo.pronunciation;
       atArr   = splitInfo.accent_type || atArr;
