@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sequential Reader — AivisSpeech</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234f8eff'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='12' y='5' width='8' height='13' rx='4' fill='white'/%3E%3Cpath d='M8 15 Q8 23 16 23 Q24 23 24 15' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cline x1='16' y1='23' x2='16' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3Cline x1='11' y1='27' x2='21' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b14;
+    --surface: #0d1120;
+    --surface2: #131929;
+    --border: #1e2d4a;
+    --accent: #4f8eff;
+    --accent2: #a855f7;
+    --text: #e8edf8;
+    --text-muted: #5a6a8a;
+    --success: #22d3a0;
+    --error: #ff4f6a;
+    --playing: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem 4rem;
+  }
+
+  /* Header */
+  header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .logo-text { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+  .header-right { margin-left: auto; }
+  .back-link { color: var(--text-muted); font-size: 0.8rem; text-decoration: none;
+    border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; }
+  .back-link:hover { color: var(--text); border-color: var(--accent); }
+
+  /* Setup panel */
+  .setup-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .setup-row {
+    display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em; }
+  select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  select:focus, textarea:focus { border-color: var(--accent); }
+  select { min-width: 200px; }
+
+  /* Text input area */
+  .text-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .text-panel h2 { font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 0.8rem; }
+  textarea#scriptInput {
+    width: 100%; height: 180px; resize: vertical;
+    line-height: 1.7; font-size: 0.88rem;
+  }
+  .text-actions { display: flex; gap: 0.6rem; margin-top: 0.8rem; align-items: center; }
+  .line-count { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: none; border-radius: 8px;
+    padding: 8px 16px; font-size: 0.85rem; font-family: inherit;
+    cursor: pointer; transition: all 0.2s; font-weight: 500;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(255,79,106,0.15); color: var(--error); border: 1px solid rgba(255,79,106,0.3); }
+  .btn-danger:hover { background: rgba(255,79,106,0.25); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Transport controls */
+  .transport {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
+  }
+  .transport-status {
+    font-size: 0.82rem; color: var(--text-muted);
+    margin-left: auto;
+  }
+  .transport-status span { color: var(--accent); font-weight: 500; }
+
+  /* Lines list */
+  .lines-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .lines-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem; color: var(--text-muted);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .line-item {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.9rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .line-item:last-child { border-bottom: none; }
+  .line-item:hover { background: rgba(79,142,255,0.04); }
+  .line-item.active {
+    background: rgba(245,158,11,0.08);
+    border-left: 3px solid var(--playing);
+  }
+  .line-item.done { opacity: 0.45; }
+  .line-item.playing {
+    background: rgba(245,158,11,0.12);
+    border-left: 3px solid var(--playing);
+  }
+
+  .line-num {
+    font-size: 0.72rem; color: var(--text-muted);
+    width: 24px; text-align: right; flex-shrink: 0;
+  }
+  .line-text {
+    flex: 1; font-size: 0.88rem; line-height: 1.6;
+  }
+  .line-play-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .line-play-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .line-play-btn.loading { animation: spin 1s linear infinite; }
+  .line-status {
+    width: 20px; flex-shrink: 0; text-align: center; font-size: 0.8rem;
+  }
+
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+  }
+
+  /* Wave animation for playing */
+  .wave {
+    display: flex; gap: 2px; align-items: center; height: 16px;
+  }
+  .wave span {
+    display: block; width: 3px; background: var(--playing);
+    border-radius: 2px; animation: wave 0.8s ease-in-out infinite;
+  }
+  .wave span:nth-child(2) { animation-delay: 0.15s; }
+  .wave span:nth-child(3) { animation-delay: 0.3s; }
+  .wave span:nth-child(4) { animation-delay: 0.45s; }
+
+  @keyframes wave {
+    0%, 100% { height: 4px; }
+    50% { height: 14px; }
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .lines-panel { animation: fadeIn 0.3s ease both; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-icon">🎙</div>
+    <div>
+      <div class="logo-text">Sequential Reader</div>
+      <div class="logo-sub">改行単位で順次読み上げ</div>
+    </div>
+    <div class="header-right">
+      <a href="/" class="back-link">← Studio に戻る</a>
+    </div>
+  </header>
+
+  <!-- Setup -->
+  <div class="setup-panel">
+    <div class="setup-row">
+      <div class="field">
+        <label>スピーカー</label>
+        <select id="speakerSelect"><option value="">読み込み中...</option></select>
+      </div>
+      <div class="field">
+        <label>速度</label>
+        <select id="speedSelect">
+          <option value="0.8">0.8x</option>
+          <option value="0.9">0.9x</option>
+          <option value="1.0" selected>1.0x（標準）</option>
+          <option value="1.1">1.1x</option>
+          <option value="1.2">1.2x</option>
+          <option value="1.5">1.5x</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>行間の間隔</label>
+        <select id="pauseSelect">
+          <option value="0">なし</option>
+          <option value="500">0.5秒</option>
+          <option value="1000" selected>1秒</option>
+          <option value="2000">2秒</option>
+          <option value="3000">3秒</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Text input -->
+  <div class="text-panel">
+    <h2>スクリプト</h2>
+    <textarea id="scriptInput" placeholder="ここにテキストを貼り付けてください。改行ごとに1つの発話として処理されます。"></textarea>
+    <div class="text-actions">
+      <button class="btn btn-primary" onclick="loadLines()">📋 読み込む</button>
+      <button class="btn btn-secondary" onclick="clearAll()">🗑 クリア</button>
+      <div class="line-count" id="lineCount"></div>
+    </div>
+  </div>
+
+  <!-- Transport -->
+  <div class="transport" id="transport" style="display:none">
+    <button class="btn btn-primary" id="playAllBtn" onclick="playAll()">▶ 全て再生</button>
+    <button class="btn btn-secondary" id="stopBtn" onclick="stopAll()" disabled>⏹ 停止</button>
+    <button class="btn btn-secondary" onclick="resetDone()">↺ リセット</button>
+    <div class="transport-status" id="transportStatus"></div>
+  </div>
+
+  <!-- Lines -->
+  <div class="lines-panel" id="linesPanel">
+    <div class="empty-state">テキストを貼り付けて「読み込む」を押してください</div>
+  </div>
+
+</div>
+
+<script>
+const API = '__AIVIS_API_URL__';
+let lines = [];
+let currentIndex = -1;
+let isPlaying = false;
+let stopRequested = false;
+let currentAudio = null;
+
+// --- スピーカー読み込み ---
+async function loadSpeakers() {
+  try {
+    const res = await fetch(`${API}/speakers`);
+    const speakers = await res.json();
+    const sel = document.getElementById('speakerSelect');
+    sel.innerHTML = '';
+    speakers.forEach(sp => sp.styles.forEach(st => {
+      const opt = document.createElement('option');
+      opt.value = st.id;
+      opt.textContent = `${sp.name} (${st.name})`;
+      sel.appendChild(opt);
+    }));
+    // 保存済み選択を復元
+    const saved = localStorage.getItem('reader_speaker');
+    if (saved) sel.value = saved;
+    sel.addEventListener('change', () => localStorage.setItem('reader_speaker', sel.value));
+  } catch(e) {
+    document.getElementById('speakerSelect').innerHTML = '<option value="0">デフォルト</option>';
+  }
+}
+
+// --- テキスト読み込み ---
+function loadLines() {
+  const raw = document.getElementById('scriptInput').value;
+  lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  document.getElementById('lineCount').textContent = `${lines.length} 行`;
+  currentIndex = -1;
+  isPlaying = false;
+  stopRequested = false;
+  renderLines();
+  document.getElementById('transport').style.display = lines.length ? 'flex' : 'none';
+  setTransportStatus('');
+}
+
+function clearAll() {
+  document.getElementById('scriptInput').value = '';
+  document.getElementById('lineCount').textContent = '';
+  lines = [];
+  stopAll();
+  renderLines();
+  document.getElementById('transport').style.display = 'none';
+}
+
+// --- レンダリング ---
+function renderLines() {
+  const panel = document.getElementById('linesPanel');
+  if (!lines.length) {
+    panel.innerHTML = '<div class="empty-state">テキストを貼り付けて「読み込む」を押してください</div>';
+    return;
+  }
+  panel.innerHTML = `
+    <div class="lines-header">${lines.length} 行</div>
+    ${lines.map((line, i) => `
+      <div class="line-item" id="line-${i}" onclick="playSingle(${i})">
+        <div class="line-num">${i + 1}</div>
+        <div class="line-text">${escHtml(line)}</div>
+        <div class="line-status" id="status-${i}"></div>
+        <button class="line-play-btn" id="btn-${i}" title="この行を再生">▶</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setLineState(i, state) {
+  const item = document.getElementById(`line-${i}`);
+  const btn  = document.getElementById(`btn-${i}`);
+  const stat = document.getElementById(`status-${i}`);
+  if (!item) return;
+  item.className = 'line-item ' + (state === 'playing' ? 'playing' : state === 'done' ? 'done' : state === 'active' ? 'active' : '');
+  if (state === 'playing') {
+    btn.innerHTML = '<div class="wave"><span></span><span></span><span></span><span></span></div>';
+    btn.disabled = true;
+    stat.textContent = '';
+  } else if (state === 'loading') {
+    btn.textContent = '⏳';
+    btn.disabled = true;
+    stat.textContent = '';
+  } else if (state === 'done') {
+    btn.textContent = '✓';
+    btn.disabled = false;
+    stat.textContent = '';
+  } else if (state === 'error') {
+    btn.textContent = '✕';
+    btn.disabled = false;
+    stat.textContent = '⚠';
+  } else {
+    btn.textContent = '▶';
+    btn.disabled = false;
+    stat.textContent = '';
+  }
+  if (state === 'playing' || state === 'loading' || state === 'active') {
+    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function setTransportStatus(msg) {
+  document.getElementById('transportStatus').innerHTML = msg;
+}
+
+// --- TTS ---
+async function synthesize(text) {
+  const speakerId = parseInt(document.getElementById('speakerSelect').value) || 0;
+  const speed = parseFloat(document.getElementById('speedSelect').value);
+  const res = await fetch(`${API}/speak`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, speaker_id: speakerId, speed }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.detail || `HTTP ${res.status}`);
+  }
+  return await res.blob();
+}
+
+function playBlob(blob) {
+  return new Promise((resolve, reject) => {
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    const audio = new Audio(URL.createObjectURL(blob));
+    currentAudio = audio;
+    audio.onended = () => { currentAudio = null; resolve(); };
+    audio.onerror = (e) => { currentAudio = null; reject(e); };
+    audio.play();
+  });
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// --- 単行再生 ---
+async function playSingle(i) {
+  if (isPlaying) return;
+  setLineState(i, 'loading');
+  try {
+    const blob = await synthesize(lines[i]);
+    setLineState(i, 'playing');
+    await playBlob(blob);
+    setLineState(i, 'done');
+  } catch(e) {
+    setLineState(i, 'error');
+    console.error(e);
+  }
+}
+
+// --- 全行再生 ---
+async function playAll(startFrom = 0) {
+  if (isPlaying) return;
+  isPlaying = true;
+  stopRequested = false;
+  document.getElementById('playAllBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+
+  const pause = parseInt(document.getElementById('pauseSelect').value);
+
+  for (let i = startFrom; i < lines.length; i++) {
+    if (stopRequested) break;
+    currentIndex = i;
+    setTransportStatus(`<span>${i + 1} / ${lines.length}</span> 行目を再生中`);
+    setLineState(i, 'loading');
+    try {
+      const blob = await synthesize(lines[i]);
+      if (stopRequested) { setLineState(i, ''); break; }
+      setLineState(i, 'playing');
+      await playBlob(blob);
+      if (stopRequested) { setLineState(i, ''); break; }
+      setLineState(i, 'done');
+      if (i < lines.length - 1 && pause > 0) await sleep(pause);
+    } catch(e) {
+      setLineState(i, 'error');
+      console.error(`行 ${i+1} エラー:`, e);
+      // エラーでも続行
+    }
+  }
+
+  isPlaying = false;
+  stopRequested = false;
+  currentIndex = -1;
+  document.getElementById('playAllBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  if (!stopRequested) setTransportStatus('✓ 再生完了');
+}
+
+function stopAll() {
+  stopRequested = true;
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  isPlaying = false;
+  document.getElementById('playAllBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  setTransportStatus('⏹ 停止しました');
+}
+
+function resetDone() {
+  stopAll();
+  lines.forEach((_, i) => setLineState(i, ''));
+  setTransportStatus('');
+}
+
+// --- 初期化 ---
+loadSpeakers();
+
+// テキストエリア入力中にカウント更新
+document.getElementById('scriptInput').addEventListener('input', function() {
+  const count = this.value.split('\n').map(l=>l.trim()).filter(l=>l).length;
+  document.getElementById('lineCount').textContent = count ? `${count} 行` : '';
+});
+
+// Ctrl+Enter で読み込み
+document.getElementById('scriptInput').addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'Enter') loadLines();
+});
+</script>
+</body>
+</html>
