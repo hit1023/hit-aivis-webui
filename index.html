@@ -1049,6 +1049,7 @@
     <button class="tab-btn" onclick="switchTab('replacer')">📝 置換ルール</button>
     <button class="tab-btn" onclick="switchTab('history')">📜 履歴</button>
     <button class="tab-btn" onclick="switchTab('kana')">🔤 読みチェック</button>
+    <button class="tab-btn" onclick="switchTab('reader')">▶ 順次読み上げ</button>
   </nav>
 
   <!-- ============================
@@ -1480,6 +1481,82 @@
 
   </div><!-- /page-kana -->
 
+  <div class="page" id="page-reader">
+
+    <!-- 設定 -->
+    <div class="card">
+      <div class="card-title">設定</div>
+      <div style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:0.75rem;color:var(--text-muted);">スピーカー</label>
+          <div class="select-wrapper" style="min-width:200px;">
+            <select id="readerSpeakerSelect"><option value="">読み込み中...</option></select>
+            <span class="select-arrow">▾</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:0.75rem;color:var(--text-muted);">速度</label>
+          <div class="select-wrapper">
+            <select id="readerSpeed">
+              <option value="0.8">0.8x</option>
+              <option value="0.9">0.9x</option>
+              <option value="1.0" selected>1.0x（標準）</option>
+              <option value="1.1">1.1x</option>
+              <option value="1.2">1.2x</option>
+              <option value="1.5">1.5x</option>
+            </select>
+            <span class="select-arrow">▾</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:0.75rem;color:var(--text-muted);">行間の間隔</label>
+          <div class="select-wrapper">
+            <select id="readerPause">
+              <option value="0">なし</option>
+              <option value="500">0.5秒</option>
+              <option value="1000" selected>1秒</option>
+              <option value="2000">2秒</option>
+              <option value="3000">3秒</option>
+            </select>
+            <span class="select-arrow">▾</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- テキスト入力 -->
+    <div class="card">
+      <div class="card-title">スクリプト</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.8rem;line-height:1.6">
+        テキストを貼り付けてください。改行ごとに1つの発話として処理されます。
+      </p>
+      <textarea id="readerInput" rows="8"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.7rem;font-size:0.85rem;resize:vertical;line-height:1.8;margin-bottom:0.8rem;"
+        placeholder="本日はご来院ありがとうございます。&#10;鼻尖形成や隆鼻術をご検討とのことですが…"></textarea>
+      <div style="display:flex;gap:0.6rem;align-items:center;">
+        <button class="btn-primary" onclick="readerLoad()">📋 読み込む</button>
+        <button class="btn-ghost" onclick="readerClear()">🗑 クリア</button>
+        <span id="readerLineCount" style="font-size:0.78rem;color:var(--text-muted);margin-left:auto;"></span>
+      </div>
+    </div>
+
+    <!-- トランスポート -->
+    <div id="readerTransport" style="display:none;" class="card">
+      <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;">
+        <button class="btn-primary" id="readerPlayAllBtn" onclick="readerPlayAll()">▶ 全て再生</button>
+        <button class="btn-ghost" id="readerStopBtn" onclick="readerStop()" disabled style="opacity:0.4;">⏹ 停止</button>
+        <button class="btn-ghost" onclick="readerReset()">↺ リセット</button>
+        <span id="readerStatus" style="font-size:0.82rem;color:var(--text-muted);margin-left:auto;"></span>
+      </div>
+    </div>
+
+    <!-- 行リスト -->
+    <div class="card" id="readerLinesCard" style="display:none;">
+      <div id="readerLines"></div>
+    </div>
+
+  </div><!-- /page-reader -->
+
 </div>
 
 <!-- 削除確認ダイアログ -->
@@ -1550,7 +1627,7 @@ function resolveWordTypeLabel(w) {
 // ==========================================
 //  タブ
 // ==========================================
-const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana'];
+const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader'];
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active', _TABS[i] === tab);
@@ -1801,6 +1878,7 @@ async function loadSpeakers() {
     updateApiSample();
     populateHistSpeakerFilter(speakers);
     populateKanaSpeakerSelect(speakers);
+    populateReaderSpeakerSelect(speakers);
   } catch(e) {
     console.error('[Speaker] loadSpeakers failed:', e);
     document.getElementById('apiStatus').textContent = '接続失敗';
@@ -3639,6 +3717,179 @@ function populateKanaSpeakerSelect(speakers) {
     sel.appendChild(opt);
   }));
 }
+
+// ==========================================
+//  順次読み上げ (Reader)
+// ==========================================
+let _readerLines = [];
+let _readerPlaying = false;
+let _readerStop = false;
+let _readerAudio = null;
+
+function populateReaderSpeakerSelect(speakers) {
+  const sel = document.getElementById('readerSpeakerSelect');
+  sel.innerHTML = '';
+  speakers.forEach(spk => spk.styles.forEach(st => {
+    const opt = document.createElement('option');
+    opt.value = st.id;
+    opt.textContent = `${spk.name}（${st.name}）`;
+    sel.appendChild(opt);
+  }));
+  const saved = localStorage.getItem('reader_speaker');
+  if (saved) sel.value = saved;
+  sel.addEventListener('change', () => localStorage.setItem('reader_speaker', sel.value));
+}
+
+function readerLoad() {
+  const raw = document.getElementById('readerInput').value;
+  _readerLines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  document.getElementById('readerLineCount').textContent = _readerLines.length ? `${_readerLines.length} 行` : '';
+  _readerPlaying = false;
+  _readerStop = false;
+  _readerRenderLines();
+  const show = _readerLines.length > 0;
+  document.getElementById('readerTransport').style.display = show ? '' : 'none';
+  document.getElementById('readerLinesCard').style.display = show ? '' : 'none';
+  document.getElementById('readerStatus').textContent = '';
+}
+
+function readerClear() {
+  readerStop();
+  document.getElementById('readerInput').value = '';
+  document.getElementById('readerLineCount').textContent = '';
+  _readerLines = [];
+  document.getElementById('readerLines').innerHTML = '';
+  document.getElementById('readerTransport').style.display = 'none';
+  document.getElementById('readerLinesCard').style.display = 'none';
+}
+
+function _readerRenderLines() {
+  document.getElementById('readerLines').innerHTML = _readerLines.map((line, i) => `
+    <div id="rline-${i}" onclick="readerPlayOne(${i})"
+      style="display:flex;align-items:center;gap:1rem;padding:0.75rem 0.2rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;border-radius:6px;">
+      <span style="font-size:0.72rem;color:var(--text-muted);width:22px;text-align:right;flex-shrink:0;">${i + 1}</span>
+      <span style="flex:1;font-size:0.88rem;line-height:1.6;">${_escHtml(line)}</span>
+      <span id="rstat-${i}" style="width:18px;text-align:center;font-size:0.8rem;flex-shrink:0;"></span>
+      <button id="rbtn-${i}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:0.72rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;" title="再生">▶</button>
+    </div>
+  `).join('');
+}
+
+function _escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function _readerSetState(i, state) {
+  const item = document.getElementById(`rline-${i}`);
+  const btn  = document.getElementById(`rbtn-${i}`);
+  const stat = document.getElementById(`rstat-${i}`);
+  if (!item) return;
+  // 背景色リセット
+  item.style.background = '';
+  item.style.borderLeft = '';
+  if (state === 'playing') {
+    item.style.background = 'rgba(245,158,11,0.10)';
+    item.style.borderLeft = '3px solid #f59e0b';
+    btn.innerHTML = '⏸'; btn.disabled = true; stat.textContent = '';
+    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else if (state === 'loading') {
+    item.style.background = 'rgba(79,142,255,0.06)';
+    btn.textContent = '⏳'; btn.disabled = true; stat.textContent = '';
+    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else if (state === 'done') {
+    item.style.opacity = '0.45';
+    btn.textContent = '✓'; btn.disabled = false; stat.textContent = '';
+  } else if (state === 'error') {
+    btn.textContent = '!'; btn.disabled = false; stat.textContent = '⚠';
+  } else {
+    item.style.opacity = '';
+    btn.textContent = '▶'; btn.disabled = false; stat.textContent = '';
+  }
+}
+
+async function _readerSynth(text) {
+  const speakerId = parseInt(document.getElementById('readerSpeakerSelect').value) || 0;
+  const speed = parseFloat(document.getElementById('readerSpeed').value);
+  const res = await fetch(`${API}/speak`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, speaker_id: speakerId, speed }),
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `HTTP ${res.status}`); }
+  return res.blob();
+}
+
+function _readerPlayBlob(blob) {
+  return new Promise((resolve, reject) => {
+    if (_readerAudio) { _readerAudio.pause(); _readerAudio = null; }
+    const audio = new Audio(URL.createObjectURL(blob));
+    _readerAudio = audio;
+    audio.onended = () => { _readerAudio = null; resolve(); };
+    audio.onerror = (e) => { _readerAudio = null; reject(e); };
+    audio.play();
+  });
+}
+
+async function readerPlayOne(i) {
+  if (_readerPlaying) return;
+  _readerSetState(i, 'loading');
+  try {
+    const blob = await _readerSynth(_readerLines[i]);
+    _readerSetState(i, 'playing');
+    await _readerPlayBlob(blob);
+    _readerSetState(i, 'done');
+  } catch(e) { _readerSetState(i, 'error'); }
+}
+
+async function readerPlayAll() {
+  if (_readerPlaying) return;
+  _readerPlaying = true; _readerStop = false;
+  document.getElementById('readerPlayAllBtn').disabled = true;
+  document.getElementById('readerStopBtn').disabled = false;
+  document.getElementById('readerStopBtn').style.opacity = '';
+  const pause = parseInt(document.getElementById('readerPause').value);
+  for (let i = 0; i < _readerLines.length; i++) {
+    if (_readerStop) break;
+    document.getElementById('readerStatus').innerHTML = `<span style="color:var(--accent)">${i + 1} / ${_readerLines.length}</span> 行目`;
+    _readerSetState(i, 'loading');
+    try {
+      const blob = await _readerSynth(_readerLines[i]);
+      if (_readerStop) { _readerSetState(i, ''); break; }
+      _readerSetState(i, 'playing');
+      await _readerPlayBlob(blob);
+      if (_readerStop) { _readerSetState(i, ''); break; }
+      _readerSetState(i, 'done');
+      if (i < _readerLines.length - 1 && pause > 0) await new Promise(r => setTimeout(r, pause));
+    } catch(e) { _readerSetState(i, 'error'); }
+  }
+  _readerPlaying = false;
+  document.getElementById('readerPlayAllBtn').disabled = false;
+  document.getElementById('readerStopBtn').disabled = true;
+  document.getElementById('readerStopBtn').style.opacity = '0.4';
+  if (!_readerStop) document.getElementById('readerStatus').textContent = '✓ 再生完了';
+}
+
+function readerStop() {
+  _readerStop = true;
+  if (_readerAudio) { _readerAudio.pause(); _readerAudio = null; }
+  _readerPlaying = false;
+  document.getElementById('readerPlayAllBtn').disabled = false;
+  document.getElementById('readerStopBtn').disabled = true;
+  document.getElementById('readerStopBtn').style.opacity = '0.4';
+  document.getElementById('readerStatus').textContent = '⏹ 停止';
+}
+
+function readerReset() {
+  readerStop();
+  _readerLines.forEach((_, i) => _readerSetState(i, ''));
+  document.getElementById('readerStatus').textContent = '';
+}
+
+document.getElementById('readerInput').addEventListener('input', function() {
+  const count = this.value.split('\n').map(l => l.trim()).filter(l => l).length;
+  document.getElementById('readerLineCount').textContent = count ? `${count} 行` : '';
+});
+
+document.getElementById('readerInput').addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'Enter') readerLoad();
+});
 
 // ==========================================
 //  初期化
