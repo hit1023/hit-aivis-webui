@@ -1050,7 +1050,6 @@
     <button class="tab-btn" onclick="switchTab('history')">📜 履歴</button>
     <button class="tab-btn" onclick="switchTab('kana')">🔤 読みチェック</button>
     <button class="tab-btn" onclick="switchTab('reader')">▶ 順次読み上げ</button>
-    <button class="tab-btn" onclick="switchTab('tools')">🛠 ツール</button>
   </nav>
 
   <!-- ============================
@@ -1558,82 +1557,6 @@
 
   </div><!-- /page-reader -->
 
-  <!-- ===== ツール ===== -->
-  <div class="page" id="page-tools">
-
-    <!-- 文字起こし -->
-    <div class="card">
-      <div class="card-title">🎤 音声ファイル 文字起こし</div>
-      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
-        WAV / MP3 / M4A などの音声ファイルをブラウザ内 Whisper でテキスト変換します。<br>
-        初回はモデルのダウンロードが発生します（キャッシュ後は即時）。
-      </p>
-
-      <!-- 設定 -->
-      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;align-items:flex-end;">
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          <label style="font-size:0.75rem;color:var(--text-muted);">モデル</label>
-          <div class="select-wrapper">
-            <select id="whisperModel">
-              <option value="Xenova/whisper-tiny">tiny (75MB・最速)</option>
-              <option value="Xenova/whisper-small">small (244MB・高速)</option>
-              <option value="Xenova/whisper-medium" selected>medium (1.4GB・標準)</option>
-              <option value="Xenova/whisper-large-v3">large-v3 (3.1GB・高精度)</option>
-            </select>
-            <span class="select-arrow">▾</span>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          <label style="font-size:0.75rem;color:var(--text-muted);">言語</label>
-          <div class="select-wrapper">
-            <select id="whisperLang">
-              <option value="japanese" selected>日本語</option>
-              <option value="english">英語</option>
-              <option value="">自動検出</option>
-            </select>
-            <span class="select-arrow">▾</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- ドロップゾーン -->
-      <div id="whisperDropZone"
-        ondragover="whisperDragOver(event)" ondragleave="whisperDragLeave(event)" ondrop="whisperDrop(event)"
-        onclick="document.getElementById('whisperFileInput').click()"
-        style="border:2px dashed var(--border);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;margin-bottom:1rem;">
-        <div style="font-size:2rem;margin-bottom:0.5rem;">🎵</div>
-        <div style="font-size:0.88rem;color:var(--text-muted);">クリックまたはドラッグ＆ドロップで音声ファイルを選択</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.3rem;">WAV / MP3 / M4A / OGG / FLAC 対応</div>
-        <div id="whisperFileName" style="margin-top:0.6rem;font-size:0.82rem;color:var(--accent);min-height:1.2em;"></div>
-      </div>
-      <input type="file" id="whisperFileInput" accept="audio/*" style="display:none" onchange="whisperFileSelected(event)">
-
-      <!-- 変換ボタン -->
-      <div style="display:flex;gap:0.8rem;align-items:center;margin-bottom:1rem;">
-        <button class="btn-primary" id="whisperStartBtn" onclick="whisperStart()" disabled>🔍 文字起こし開始</button>
-        <button class="btn-ghost" id="whisperCancelBtn" onclick="whisperCancel()" style="display:none;">✕ キャンセル</button>
-      </div>
-
-      <!-- プログレス -->
-      <div id="whisperProgress" style="display:none;margin-bottom:1rem;">
-        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;" id="whisperProgressLabel">処理中...</div>
-        <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;">
-          <div id="whisperProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.3s;"></div>
-        </div>
-      </div>
-
-      <!-- 結果 -->
-      <div id="whisperResultWrap" style="display:none;">
-        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
-          <span style="font-size:0.78rem;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;">文字起こし結果</span>
-          <button class="btn-ghost" style="margin-left:auto;font-size:0.78rem;padding:4px 10px;" onclick="whisperCopy()">📋 コピー</button>
-        </div>
-        <textarea id="whisperResult" readonly rows="10"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.8rem;font-size:0.88rem;resize:vertical;line-height:1.8;"></textarea>
-      </div>
-    </div>
-
-  </div><!-- /page-tools -->
 
 </div>
 
@@ -1705,7 +1628,7 @@ function resolveWordTypeLabel(w) {
 // ==========================================
 //  タブ
 // ==========================================
-const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'tools'];
+const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader'];
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active', _TABS[i] === tab);
@@ -3980,143 +3903,5 @@ setInterval(loadModels, 30000);
 initViz('addViz', '', 0);
 </script>
 
-<!-- ===== Whisper 文字起こし (ES Module) ===== -->
-<script type="module">
-import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
-
-env.allowLocalModels = false;
-env.useBrowserCache   = true;
-
-let _whisperPipeline = null;
-let _whisperCancelled = false;
-let _whisperFile = null;
-
-// ファイル選択
-window.whisperFileSelected = function(e) {
-  _whisperFile = e.target.files[0] || null;
-  _updateWhisperFile();
-};
-window.whisperDragOver = function(e) {
-  e.preventDefault();
-  document.getElementById('whisperDropZone').style.borderColor = 'var(--accent)';
-  document.getElementById('whisperDropZone').style.background  = 'rgba(79,142,255,0.05)';
-};
-window.whisperDragLeave = function(e) {
-  document.getElementById('whisperDropZone').style.borderColor = '';
-  document.getElementById('whisperDropZone').style.background  = '';
-};
-window.whisperDrop = function(e) {
-  e.preventDefault();
-  window.whisperDragLeave(e);
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('audio/')) {
-    _whisperFile = file;
-    _updateWhisperFile();
-  }
-};
-function _updateWhisperFile() {
-  const label = document.getElementById('whisperFileName');
-  const btn   = document.getElementById('whisperStartBtn');
-  if (_whisperFile) {
-    const mb = (_whisperFile.size / 1024 / 1024).toFixed(1);
-    label.textContent = `${_whisperFile.name}  (${mb} MB)`;
-    btn.disabled = false;
-  } else {
-    label.textContent = '';
-    btn.disabled = true;
-  }
-}
-
-// 文字起こし開始
-window.whisperStart = async function() {
-  if (!_whisperFile) return;
-  _whisperCancelled = false;
-
-  const modelId = document.getElementById('whisperModel').value;
-  const lang    = document.getElementById('whisperLang').value;
-
-  document.getElementById('whisperStartBtn').disabled  = true;
-  document.getElementById('whisperCancelBtn').style.display = '';
-  document.getElementById('whisperProgress').style.display  = '';
-  document.getElementById('whisperResultWrap').style.display = 'none';
-  _setWhisperProgress(0, 'モデルを準備中...');
-
-  try {
-    // モデルロード（キャッシュがなければダウンロード）
-    if (!_whisperPipeline || _whisperPipeline._model_id !== modelId) {
-      _whisperPipeline = await pipeline('automatic-speech-recognition', modelId, {
-        progress_callback: (p) => {
-          if (p.status === 'downloading') {
-            const pct = p.total ? Math.round(p.loaded / p.total * 60) : 0;
-            const mb  = (p.loaded / 1024 / 1024).toFixed(0);
-            const tot = p.total ? (p.total / 1024 / 1024).toFixed(0) : '?';
-            _setWhisperProgress(pct, `モデルをダウンロード中... ${mb} / ${tot} MB`);
-          } else if (p.status === 'loading') {
-            _setWhisperProgress(65, 'モデルを読み込み中...');
-          }
-        }
-      });
-      _whisperPipeline._model_id = modelId;
-    }
-    if (_whisperCancelled) return;
-
-    _setWhisperProgress(70, '音声を解析中...');
-
-    // AudioContext でデコード → Float32Array
-    const arrayBuf = await _whisperFile.arrayBuffer();
-    const audioBuf = await new AudioContext({ sampleRate: 16000 }).decodeAudioData(arrayBuf);
-    const audio    = audioBuf.getChannelData(0);  // mono Float32Array
-    if (_whisperCancelled) return;
-
-    _setWhisperProgress(80, '文字起こし実行中...');
-
-    const result = await _whisperPipeline(audio, {
-      language:         lang || null,
-      task:             'transcribe',
-      chunk_length_s:   30,
-      stride_length_s:  5,
-      return_timestamps: false,
-    });
-    if (_whisperCancelled) return;
-
-    _setWhisperProgress(100, '完了');
-    document.getElementById('whisperResult').value = result.text.trim();
-    document.getElementById('whisperResultWrap').style.display = '';
-
-  } catch(e) {
-    if (!_whisperCancelled) {
-      _setWhisperProgress(0, `エラー: ${e.message}`);
-      console.error('[Whisper]', e);
-    }
-  } finally {
-    document.getElementById('whisperStartBtn').disabled  = false;
-    document.getElementById('whisperCancelBtn').style.display = 'none';
-    if (!_whisperCancelled)
-      setTimeout(() => { document.getElementById('whisperProgress').style.display = 'none'; }, 2000);
-  }
-};
-
-window.whisperCancel = function() {
-  _whisperCancelled = true;
-  _whisperPipeline = null;
-  document.getElementById('whisperProgress').style.display  = 'none';
-  document.getElementById('whisperStartBtn').disabled  = false;
-  document.getElementById('whisperCancelBtn').style.display = 'none';
-};
-
-window.whisperCopy = function() {
-  const text = document.getElementById('whisperResult').value;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = event.currentTarget;
-    btn.textContent = '✓ コピー済み';
-    setTimeout(() => btn.textContent = '📋 コピー', 1500);
-  });
-};
-
-function _setWhisperProgress(pct, label) {
-  document.getElementById('whisperProgressBar').style.width  = pct + '%';
-  document.getElementById('whisperProgressLabel').textContent = label;
-}
-</script>
 </body>
 </html>
