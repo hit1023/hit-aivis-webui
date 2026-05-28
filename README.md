@@ -60,7 +60,7 @@ Nginx で配信するシンプルな単一HTMLファイル構成です。
 ## 必要な環境
 
 - Docker / Docker Compose
-- [AIVIS Router](https://github.com/hit1023/me-aivis-router) が起動していること
+- [AIVIS Router](https://github.com/hit1023/hit-aivis-router) が起動していること
 
 ---
 
