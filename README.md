@@ -1,6 +1,6 @@
 # AivisSpeech Studio — WebUI
 
-[AIVIS Router](https://github.com/hit1023/me-aivis-router) のブラウザ操作用フロントエンドです。  
+[AIVIS Router](https://github.com/hit1023/hit-aivis-router) のブラウザ操作用フロントエンドです。  
 Nginx で配信するシンプルな単一HTMLファイル構成です。
 
 ---
@@ -67,12 +67,12 @@ Nginx で配信するシンプルな単一HTMLファイル構成です。
 ## セットアップ
 
 ```bash
-git clone <このリポジトリのURL>
-cd AivisWebUI
+git clone git@github.com:hit1023/hit-aivis-webui.git
+cd hit-aivis-webui
 docker compose up -d
 ```
 
-ブラウザで `http://localhost:8888` を開きます。
+ブラウザで `http://localhost:8889` を開きます。
 
 ---
 
