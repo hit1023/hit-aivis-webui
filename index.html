@@ -1254,7 +1254,6 @@
         <summary style="cursor:pointer;font-size:0.82rem;color:var(--text-muted);user-select:none">フォーマット例を見る ▾</summary>
         <pre style="margin-top:0.6rem;padding:0.7rem 1rem;background:var(--surface2);border-radius:6px;font-size:0.78rem;line-height:1.7;overflow-x:auto"># 表層形,読み,アクセント,品詞,優先度
 東京スカイツリー,トウキョウスカイツリー,5,固有名詞,5
-堀田創,ホッタハジメ,3,人名,7
 新田|真剣佑,アラタ|マッケンユウ,1|3,人名,7
 # 品詞・優先度は省略可（デフォルト: 固有名詞 / 5）
 # 複合語は | で各形態素を区切る</pre>
@@ -1314,17 +1313,17 @@
       <div class="card-title">ルールを追加</div>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
         音声合成前にテキストへ適用する置換ルールを登録します。<br>
-        例: <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px">Mumon → ミューモン</code>
-        と設定すると、TTS に送るテキスト中の <em>Mumon</em> が <em>ミューモン</em> に変換されてから AivisSpeech へ渡されます。
+        例: <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px">Example → イグザンプル</code>
+        と設定すると、TTS に送るテキスト中の <em>Example</em> が <em>イグザンプル</em> に変換されてから AivisSpeech へ渡されます。
       </p>
       <div class="dict-form-grid">
         <div class="form-group">
           <label>置換前テキスト <span style="color:var(--error)">*</span></label>
-          <input type="text" id="repSrc" placeholder="Mumon">
+          <input type="text" id="repSrc" placeholder="Example">
         </div>
         <div class="form-group">
           <label>置換後テキスト</label>
-          <input type="text" id="repDst" placeholder="ミューモン">
+          <input type="text" id="repDst" placeholder="イグザンプル">
         </div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:0.6rem;margin-top:0.6rem">
@@ -3109,7 +3108,6 @@ function dictImportDownloadTemplate() {
   const csv = [
     '# 表層形,読み,アクセント,品詞,優先度',
     '東京スカイツリー,トウキョウスカイツリー,5,固有名詞,5',
-    '堀田創,ホッタハジメ,3,人名,7',
     '新田|真剣佑,アラタ|マッケンユウ,1|3,人名,7',
     '# 品詞・優先度は省略可（デフォルト: 固有名詞 / 5）',
     '# 複合語は | で各形態素を区切る（表層形・読み・アクセントの数を一致させること）',
