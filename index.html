@@ -1050,6 +1050,7 @@
     <button class="tab-btn" onclick="switchTab('history')">📜 履歴</button>
     <button class="tab-btn" onclick="switchTab('kana')">🔤 読みチェック</button>
     <button class="tab-btn" onclick="switchTab('reader')">▶ 順次読み上げ</button>
+    <button class="tab-btn" onclick="switchTab('settings')" style="margin-left:auto">⚙️ 設定</button>
   </nav>
 
   <!-- ============================
@@ -1556,6 +1557,46 @@
 
   </div><!-- /page-reader -->
 
+  <!-- ============================
+       ⚙️ 設定
+       ============================ -->
+  <div class="page" id="page-settings">
+    <div class="card">
+      <div class="card-title">⚙️ 接続設定</div>
+      <p style="color:var(--text-dim);font-size:.9em;margin-bottom:1.2em">
+        変更はブラウザに保存されます。空欄にして保存するとデフォルト値（ビルド時設定）に戻ります。
+      </p>
+
+      <label class="label" for="settingsApiUrl">API URL</label>
+      <div style="display:flex;gap:.5em;margin-bottom:1em">
+        <input class="input" id="settingsApiUrl" type="url" placeholder="http://192.168.0.20:8000" style="flex:1">
+      </div>
+      <p style="color:var(--text-dim);font-size:.85em;margin-top:-.6em;margin-bottom:1.4em">
+        現在の接続先: <code id="settingsApiUrlCurrent" style="color:var(--accent)"></code>
+      </p>
+
+      <label class="label" for="settingsApiKey">API キー（任意）</label>
+      <div style="display:flex;gap:.5em;margin-bottom:.4em">
+        <input class="input" id="settingsApiKey" type="password" placeholder="設定しない場合は空欄" style="flex:1">
+        <button class="btn-ghost" onclick="settingsToggleApiKeyVisibility()" id="settingsApiKeyToggle" title="表示/非表示">👁</button>
+      </div>
+      <p style="color:var(--text-dim);font-size:.85em;margin-bottom:1.4em">
+        設定すると全リクエストに <code>Authorization: Bearer &lt;key&gt;</code> ヘッダーを付与します。
+      </p>
+
+      <div style="display:flex;gap:.8em;align-items:center">
+        <button class="btn-primary" onclick="settingsSave()">💾 保存して再接続</button>
+        <button class="btn-ghost" onclick="settingsReset()">🗑 デフォルトに戻す</button>
+        <span id="settingsSaveMsg" style="color:var(--success);font-size:.9em"></span>
+      </div>
+    </div>
+
+    <div class="card" id="settingsStatusCard">
+      <div class="card-title">🔌 接続テスト</div>
+      <div id="settingsStatus" style="font-size:.9em;color:var(--text-dim)">保存後に自動で確認します…</div>
+    </div>
+  </div><!-- /page-settings -->
+
 
 </div>
 
@@ -1572,7 +1613,29 @@
 </div>
 
 <script>
-const API = '__AIVIS_API_URL__';
+// ビルド時に注入されるデフォルトURL。localStorage で上書き可能。
+const _API_DEFAULT = '__AIVIS_API_URL__';
+const _LS_API_URL = 'aivis_api_url';
+const _LS_API_KEY = 'aivis_api_key';
+
+function getApiUrl() {
+  try { return localStorage.getItem(_LS_API_URL) || _API_DEFAULT; } catch { return _API_DEFAULT; }
+}
+function getApiKey() {
+  try { return localStorage.getItem(_LS_API_KEY) || ''; } catch { return ''; }
+}
+
+// fetch のラッパー。APIキーが設定されていれば Authorization ヘッダーを付与する。
+function apiFetch(path, options = {}) {
+  const key = getApiKey();
+  if (key) {
+    options.headers = Object.assign({}, options.headers || {}, { 'Authorization': `Bearer ${key}` });
+  }
+  return fetch(getApiUrl() + path, options);
+}
+
+// 後方互換: API 変数を動的に参照できるよう getter プロパティとして定義
+Object.defineProperty(window, 'API', { get: getApiUrl });
 
 const WORD_TYPE_LABELS = {
   PROPER_NOUN: '固有名詞', LOCATION_NAME: '地名',
@@ -1627,7 +1690,7 @@ function resolveWordTypeLabel(w) {
 // ==========================================
 //  タブ
 // ==========================================
-const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader'];
+const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'settings'];
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active', _TABS[i] === tab);
@@ -1637,6 +1700,71 @@ function switchTab(tab) {
   if (tab === 'dict') loadDict();
   if (tab === 'replacer') loadReplacements();
   if (tab === 'history') loadHistory(1);
+  if (tab === 'settings') settingsInit();
+}
+
+// ==========================================
+//  ⚙️ 設定タブ
+// ==========================================
+function settingsInit() {
+  try {
+    document.getElementById('settingsApiUrl').value = localStorage.getItem(_LS_API_URL) || '';
+    document.getElementById('settingsApiKey').value = localStorage.getItem(_LS_API_KEY) || '';
+  } catch {}
+  document.getElementById('settingsApiUrlCurrent').textContent = getApiUrl();
+}
+
+function settingsToggleApiKeyVisibility() {
+  const inp = document.getElementById('settingsApiKey');
+  const btn = document.getElementById('settingsApiKeyToggle');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+async function settingsSave() {
+  const url = document.getElementById('settingsApiUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('settingsApiKey').value.trim();
+  try {
+    if (url) localStorage.setItem(_LS_API_URL, url); else localStorage.removeItem(_LS_API_URL);
+    if (key) localStorage.setItem(_LS_API_KEY, key); else localStorage.removeItem(_LS_API_KEY);
+  } catch { alert('localStorage への保存に失敗しました（プライベートウィンドウでは使えません）'); return; }
+  document.getElementById('settingsApiUrlCurrent').textContent = getApiUrl();
+  const msg = document.getElementById('settingsSaveMsg');
+  msg.textContent = '✅ 保存しました';
+  setTimeout(() => { msg.textContent = ''; }, 3000);
+  await settingsTestConnection();
+  // スピーカー一覧を新しいURLで再取得
+  loadSpeakers();
+  loadModels();
+}
+
+function settingsReset() {
+  if (!confirm('デフォルト設定（ビルド時の値）に戻しますか？')) return;
+  try { localStorage.removeItem(_LS_API_URL); localStorage.removeItem(_LS_API_KEY); } catch {}
+  document.getElementById('settingsApiUrl').value = '';
+  document.getElementById('settingsApiKey').value = '';
+  document.getElementById('settingsApiUrlCurrent').textContent = getApiUrl();
+  const msg = document.getElementById('settingsSaveMsg');
+  msg.textContent = '🔄 デフォルトに戻しました';
+  setTimeout(() => { msg.textContent = ''; }, 3000);
+  loadSpeakers();
+  loadModels();
+}
+
+async function settingsTestConnection() {
+  const el = document.getElementById('settingsStatus');
+  el.textContent = '🔄 接続確認中…';
+  try {
+    const res = await apiFetch('/health');
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      el.innerHTML = `<span style="color:var(--success)">✅ 接続成功</span>　<code>${getApiUrl()}</code>　provider: <strong>${data.provider || '—'}</strong>`;
+    } else {
+      el.innerHTML = `<span style="color:var(--error)">❌ HTTP ${res.status}</span>　<code>${getApiUrl()}</code>`;
+    }
+  } catch (e) {
+    el.innerHTML = `<span style="color:var(--error)">❌ 接続失敗</span>　${e.message}`;
+  }
 }
 
 // ==========================================
@@ -1650,7 +1778,7 @@ let _presets = {};  // { "855257952": { speed, pitch, ... } }
 
 async function loadPresets() {
   try {
-    const res = await fetch(`${API}/speaker_presets`);
+    const res = await apiFetch(`/speaker_presets`);
     if (res.ok) {
       _presets = await res.json();
       console.log('[Preset] loaded', Object.keys(_presets).length, 'presets:', Object.keys(_presets));
@@ -1819,7 +1947,7 @@ async function savePreset() {
     pause_length_scale: parseFloat(document.getElementById('pauseLengthScale').value),
   };
   try {
-    const res = await fetch(`${API}/speaker_presets/${speakerId}`, {
+    const res = await apiFetch(`/speaker_presets/${speakerId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1838,7 +1966,7 @@ async function deletePreset() {
   const speakerId = document.getElementById('speakerSelect').value;
   if (!speakerId) return;
   try {
-    const res = await fetch(`${API}/speaker_presets/${speakerId}`, { method: 'DELETE' });
+    const res = await apiFetch(`/speaker_presets/${speakerId}`, { method: 'DELETE' });
     if (!res.ok && res.status !== 404) throw new Error('削除失敗');
     delete _presets[speakerId];
     updatePresetBar();
@@ -1853,7 +1981,7 @@ async function loadSpeakers() {
     // プリセットを先にロード（スピーカー選択の初期適用に必要）
     await loadPresets();
 
-    const speakersRes = await fetch(`${API}/speakers`);
+    const speakersRes = await apiFetch(`/speakers`);
     const speakers = await speakersRes.json();
 
     const sel = document.getElementById('speakerSelect');
@@ -1950,7 +2078,7 @@ async function speak() {
   document.getElementById('ttsStatus').className = 'status';
 
   try {
-    const res = await fetch(`${API}/speak`, {
+    const res = await apiFetch(`/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2041,8 +2169,8 @@ async function loadModels() {
   icon.style.animation = 'spin 0.8s linear infinite';
   try {
     const [modelsRes, speakersRes] = await Promise.all([
-      fetch(`${API}/models`),
-      fetch(`${API}/speakers`),
+      apiFetch(`/models`),
+      apiFetch(`/speakers`),
     ]);
     const models = await modelsRes.json();
     const speakers = await speakersRes.json();
@@ -2160,7 +2288,7 @@ async function installModel() {
   try {
     const form = new FormData();
     form.append('file', _uploadFile, _uploadFile.name);
-    const res = await fetch(`${API}/models/install`, { method: 'POST', body: form });
+    const res = await apiFetch(`/models/install`, { method: 'POST', body: form });
     const json = await res.json();
     if (!res.ok) throw new Error(json.detail || 'インストール失敗');
     uploadShowStatus(`✓ ${json.message}`, 'success');
@@ -2179,7 +2307,7 @@ async function unloadModel(uuid, name) {
   btn.disabled = true;
   btn.textContent = '解放中...';
   try {
-    const res = await fetch(`${API}/models/${uuid}/unload`, { method: 'POST' });
+    const res = await apiFetch(`/models/${uuid}/unload`, { method: 'POST' });
     if (!res.ok) throw new Error('失敗');
     await loadModels();
     showTtsStatus(`✓ ${name} をVRAMから解放しました`, 'success');
@@ -2195,7 +2323,7 @@ async function uninstallModel(uuid, name) {
   const btn = document.getElementById(`uninst-${uuid}`);
   if (btn) { btn.disabled = true; btn.textContent = '削除中...'; }
   try {
-    const res = await fetch(`${API}/models/${uuid}/uninstall`, { method: 'DELETE' });
+    const res = await apiFetch(`/models/${uuid}/uninstall`, { method: 'DELETE' });
     const json = await res.json();
     if (!res.ok) throw new Error(json.detail || 'アンインストール失敗');
     await loadModels();
@@ -2446,8 +2574,8 @@ async function loadDict() {
   icon.style.animation = 'spin 0.8s linear infinite';
   try {
     const [dictRes, splitsRes] = await Promise.all([
-      fetch(`${API}/user_dict?enable_compound_accent=true`),
-      fetch(`${API}/user_dict/compound_splits`),
+      apiFetch(`/user_dict?enable_compound_accent=true`),
+      apiFetch(`/user_dict/compound_splits`),
     ]);
     if (!dictRes.ok) throw new Error(`HTTP ${dictRes.status}`);
     _dictData = await dictRes.json();
@@ -2640,7 +2768,7 @@ async function addWord() {
   btn.textContent = '追加中...';
 
   try {
-    const res = await fetch(`${API}/user_dict`, {
+    const res = await apiFetch(`/user_dict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2708,7 +2836,7 @@ async function updateWord(uuid) {
   saveBtn.textContent = '保存中...';
 
   try {
-    const res = await fetch(`${API}/user_dict/${uuid}`, {
+    const res = await apiFetch(`/user_dict/${uuid}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2746,7 +2874,7 @@ async function playWord(text, btn) {
   btn.disabled = true;
   btn.textContent = '⏳';
   try {
-    const res = await fetch(`${API}/speak`, {
+    const res = await apiFetch(`/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, speaker_id: speakerId }),
@@ -2783,7 +2911,7 @@ async function confirmDelete() {
   btn.disabled = true;
   btn.textContent = '削除中...';
   try {
-    const res = await fetch(`${API}/user_dict/${uuid}`, { method: 'DELETE' });
+    const res = await apiFetch(`/user_dict/${uuid}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     closeDeleteDialog();
     await loadDict();
@@ -2829,7 +2957,7 @@ async function loadReplacements() {
   btn.disabled = true;
   icon.style.animation = 'spin 0.8s linear infinite';
   try {
-    const res = await fetch(`${API}/text_replacements`);
+    const res = await apiFetch(`/text_replacements`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     _repData = await res.json();
     renderReplacements();
@@ -2918,7 +3046,7 @@ async function addReplacement() {
   btn.textContent = '追加中...';
 
   try {
-    const res = await fetch(`${API}/text_replacements`, {
+    const res = await apiFetch(`/text_replacements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ src, dst }),
@@ -2947,7 +3075,7 @@ async function deleteReplacement(src, btn) {
     return;
   }
   try {
-    const res = await fetch(`${API}/text_replacements?src=${encodeURIComponent(src)}`, { method: 'DELETE' });
+    const res = await apiFetch(`/text_replacements?src=${encodeURIComponent(src)}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     await loadReplacements();
     showRepStatus(`✓ 「${src}」のルールを削除しました`, 'success');
@@ -3016,7 +3144,7 @@ function repImportClear() {
 
 async function repExport() {
   try {
-    const res = await fetch(`${API}/text_replacements`);
+    const res = await apiFetch(`/text_replacements`);
     if (!res.ok) throw new Error(res.status);
     const rules = await res.json();
     const lines = Object.entries(rules).map(([src, dst]) => `${src}@${dst}`).join('\n');
@@ -3050,7 +3178,7 @@ async function repImportRun() {
     const form = new FormData();
     form.append('file', _repImportFile);
     form.append('mode', mode);
-    const res = await fetch(`${API}/text_replacements/import`, { method: 'POST', body: form });
+    const res = await apiFetch(`/text_replacements/import`, { method: 'POST', body: form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'インポート失敗');
 
@@ -3130,7 +3258,7 @@ async function dictImportRun() {
   try {
     const form = new FormData();
     form.append('file', _dictImportFile);
-    const res = await fetch(`${API}/user_dict/import`, { method: 'POST', body: form });
+    const res = await apiFetch(`/user_dict/import`, { method: 'POST', body: form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'インポート失敗');
 
@@ -3286,7 +3414,7 @@ async function histPlay(btn, idx) {
     if (item.pause_length       != null) body.pause_length       = item.pause_length;
     if (item.pause_length_scale != null) body.pause_length_scale = item.pause_length_scale;
 
-    const res = await fetch(`${API}/speak`, {
+    const res = await apiFetch(`/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -3411,8 +3539,8 @@ async function kanaStart() {
   // 置換ルール・辞書を取得してソース判定に使う
   try {
     const [repRes, dictRes] = await Promise.all([
-      fetch(`${API}/text_replacements`),
-      fetch(`${API}/user_dict`),
+      apiFetch(`/text_replacements`),
+      apiFetch(`/user_dict`),
     ]);
     _kanaRepRules = repRes.ok ? await repRes.json() : {};
     const dictData = dictRes.ok ? await dictRes.json() : {};
@@ -3477,7 +3605,7 @@ async function kanaRunLlmVerify() {
   // LLM設定確認（初回のみ）
   if (_kanaLlmEnabled === null) {
     try {
-      const r = await fetch(`${API}/kana_verify/status`);
+      const r = await apiFetch(`/kana_verify/status`);
       const s = await r.json();
       _kanaLlmEnabled = s.enabled;
       _kanaLlmModel = s.model || '';
@@ -3510,7 +3638,7 @@ async function kanaRunLlmVerify() {
     const batch = validRows.slice(i, i + BATCH);
     statusEl.textContent = `🤖 ${_kanaLlmModel} で確認中... ${done} / ${validRows.length}`;
     try {
-      const res = await fetch(`${API}/kana_verify`, {
+      const res = await apiFetch(`/kana_verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(batch.map(r => ({ text: r.text, kana: r.kana }))),
@@ -3646,7 +3774,7 @@ async function kanaPlay(btn, idx) {
   btn.textContent = '⏳';
   btn.disabled = true;
   try {
-    const res = await fetch(`${API}/speak`, {
+    const res = await apiFetch(`/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: row.text, speaker_id: speakerId }),
@@ -3683,7 +3811,7 @@ async function kanaAddReplacement(idx) {
   const statusEl = document.getElementById(`kana-rep-status-${idx}`);
   if (!dst) { statusEl.textContent = '置換後テキストを入力してください'; statusEl.className = 'status error'; return; }
   try {
-    const res = await fetch(`${API}/text_replacements`, {
+    const res = await apiFetch(`/text_replacements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ src: row.text, dst }),
@@ -3807,7 +3935,7 @@ function _readerSetState(i, state) {
 async function _readerSynth(text) {
   const speakerId = parseInt(document.getElementById('readerSpeakerSelect').value) || 0;
   const speed = parseFloat(document.getElementById('readerSpeed').value);
-  const res = await fetch(`${API}/speak`, {
+  const res = await apiFetch(`/speak`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, speaker_id: speakerId, speed }),
   });

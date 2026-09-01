@@ -299,7 +299,17 @@
 </div>
 
 <script>
-const API = '__AIVIS_API_URL__';
+const _API_DEFAULT = '__AIVIS_API_URL__';
+const _LS_API_URL = 'aivis_api_url';
+const _LS_API_KEY = 'aivis_api_key';
+function getApiUrl() { try { return localStorage.getItem(_LS_API_URL) || _API_DEFAULT; } catch { return _API_DEFAULT; } }
+function getApiKey() { try { return localStorage.getItem(_LS_API_KEY) || ''; } catch { return ''; } }
+function apiFetch(path, options = {}) {
+  const key = getApiKey();
+  if (key) options.headers = Object.assign({}, options.headers || {}, { 'Authorization': `Bearer ${key}` });
+  return fetch(getApiUrl() + path, options);
+}
+Object.defineProperty(window, 'API', { get: getApiUrl });
 let lines = [];
 let currentIndex = -1;
 let isPlaying = false;
@@ -309,7 +319,7 @@ let currentAudio = null;
 // --- スピーカー読み込み ---
 async function loadSpeakers() {
   try {
-    const res = await fetch(`${API}/speakers`);
+    const res = await apiFetch(`/speakers`);
     const speakers = await res.json();
     const sel = document.getElementById('speakerSelect');
     sel.innerHTML = '';
@@ -414,7 +424,7 @@ function setTransportStatus(msg) {
 async function synthesize(text) {
   const speakerId = parseInt(document.getElementById('speakerSelect').value) || 0;
   const speed = parseFloat(document.getElementById('speedSelect').value);
-  const res = await fetch(`${API}/speak`, {
+  const res = await apiFetch(`/speak`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, speaker_id: speakerId, speed }),
