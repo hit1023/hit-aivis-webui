@@ -86,7 +86,11 @@
     gap: 0.4rem;
     margin-bottom: 1.8rem;
     border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
   }
+  .tab-nav::-webkit-scrollbar { display: none; }
 
   .tab-btn {
     background: none;
@@ -101,6 +105,8 @@
     transition: color 0.2s, border-color 0.2s;
     margin-bottom: -1px;
     letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .tab-btn:hover { color: var(--text); }
