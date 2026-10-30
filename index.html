@@ -144,7 +144,7 @@
   .page.active { display: block; }
 
   /* Card */
-  /* 🖥 バックエンド稼働状況 */
+  /* バックエンド稼働状況 */
   .bk-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:.7rem; margin-bottom:1.1rem; }
   .bk-tile { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.8rem 1rem; }
   .bk-tile .v { font-size:1.7rem; font-weight:700; line-height:1.2; }
@@ -327,7 +327,7 @@
     align-items: center;
     gap: 0.4rem;
   }
-  .legacy-convert-label::before { content: '🔄'; font-size: 0.8rem; }
+  .legacy-convert-label::before { content: '';  }
   .legacy-convert-row {
     display: flex;
     gap: 0.5rem;
@@ -389,8 +389,8 @@
 
   /* Buttons */
   .btn-speak {
-    width: 100%;
-    padding: 1rem;
+    flex: none;
+    padding: .7rem 2rem;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     border: none;
     border-radius: 12px;
@@ -402,7 +402,6 @@
     transition: opacity 0.2s, transform 0.1s;
     position: relative;
     overflow: hidden;
-    margin-top: 1.2rem;
   }
 
   .btn-speak:hover { opacity: 0.9; }
@@ -466,6 +465,31 @@
   .btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* Audio */
+
+  /* 生成ボタンの行 */
+  .text-foot { display:flex; align-items:center; gap:.8rem; margin-top:.7rem; }
+  .text-foot .char-count { margin:0; margin-right:auto; }
+  .speak-hint { font-size:.7rem; color:var(--text-muted); font-family:monospace; }
+  @media (max-width:520px) { .speak-hint { display:none; } .btn-speak { padding:.7rem 1.3rem; } }
+
+  /* イコライザー */
+  .eq { margin-top:1.1rem; padding-top:1rem; border-top:1px solid var(--border); }
+  .eq-head { display:flex; align-items:center; gap:.7rem; flex-wrap:wrap; margin-bottom:.8rem; }
+  .eq-title { font-size:.75rem; letter-spacing:.12em; color:var(--text-muted); text-transform:uppercase; margin-right:auto; }
+  .eq-switch { display:flex; align-items:center; gap:.35rem; font-size:.8rem; color:var(--text-muted); cursor:pointer; }
+  .eq-preset, .eq-reset { width:auto; background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:.3rem .6rem; font-size:.8rem; font-family:inherit; cursor:pointer; }
+  .eq-reset:hover, .eq-preset:hover { border-color:var(--accent); }
+  .eq-stage { position:relative; height:190px; border:1px solid var(--border); border-radius:12px; background:var(--bg); overflow:hidden; }
+  .eq-stage canvas { position:absolute; inset:0; width:100%; height:100%; opacity:.9; }
+  .eq-bands { position:absolute; inset:0; display:grid; grid-template-columns:repeat(5,1fr); padding:.5rem .4rem .4rem; }
+  .eq-band { display:flex; flex-direction:column; align-items:center; min-width:0; }
+  .eq-band input[type=range] { writing-mode:vertical-lr; direction:rtl; width:22px; flex:1; margin:0; accent-color:var(--accent); background:transparent; }
+  .eq-band .hz { font-size:.68rem; color:var(--text-muted); font-family:monospace; margin-top:.2rem; }
+  .eq-band .db { font-size:.68rem; color:var(--text); font-family:monospace; height:1em; }
+  .eq.off .eq-bands { opacity:.35; }
+  .eq-note { font-size:.7rem; color:var(--text-muted); margin:.5rem 0 .2rem; }
+  .dl-btn { margin-top:.6rem; display:inline-block; }
+
   .player-area { display: none; }
   .player-area.visible { display: block; animation: fadeUp 0.4s ease both; }
 
@@ -1116,14 +1140,14 @@
   </header>
 
   <nav class="tab-nav">
-    <button class="tab-btn active" onclick="switchTab('tts')">🎵 音声合成</button>
-    <button class="tab-btn" onclick="switchTab('dict')">📖 単語辞書</button>
-    <button class="tab-btn" onclick="switchTab('replacer')">📝 置換ルール</button>
-    <button class="tab-btn" onclick="switchTab('history')">📜 履歴</button>
-    <button class="tab-btn" onclick="switchTab('kana')">🔤 読みチェック</button>
+    <button class="tab-btn active" onclick="switchTab('tts')">音声合成</button>
+    <button class="tab-btn" onclick="switchTab('dict')">単語辞書</button>
+    <button class="tab-btn" onclick="switchTab('replacer')">置換ルール</button>
+    <button class="tab-btn" onclick="switchTab('history')">履歴</button>
+    <button class="tab-btn" onclick="switchTab('kana')">読みチェック</button>
     <button class="tab-btn" onclick="switchTab('reader')">▶ 順次読み上げ</button>
-    <button class="tab-btn" onclick="switchTab('backends')">🖥 バックエンド</button>
-    <button class="tab-btn" onclick="switchTab('settings')" style="margin-left:auto">⚙️ 設定</button>
+    <button class="tab-btn" onclick="switchTab('backends')">バックエンド</button>
+    <button class="tab-btn" onclick="switchTab('settings')" style="margin-left:auto">設定</button>
   </nav>
 
   <!-- ============================
@@ -1146,7 +1170,47 @@
     <div class="card">
       <div class="card-title">テキスト</div>
       <textarea id="textInput" placeholder="読み上げるテキストを入力してください..." maxlength="500"></textarea>
-      <div class="char-count"><span id="charCount">0</span> / 500</div>
+      <div class="text-foot">
+        <div class="char-count"><span id="charCount">0</span> / 500</div>
+        <span class="speak-hint">Ctrl / &#8984; + Enter</span>
+        <button class="btn-speak" id="speakBtn" onclick="speak()">
+          <span class="btn-text">音声を生成</span>
+        </button>
+      </div>
+      <div class="status" id="ttsStatus"></div>
+      <div id="accentResult" style="display:none; margin-top:1rem;">
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem;">アクセント</div>
+        <div id="accentPhraseViz" style="overflow-x:auto; display:flex; gap:1rem; flex-wrap:wrap;"></div>
+      </div>
+    </div>
+
+    <div class="card player-area" id="playerArea">
+      <div class="card-title">再生</div>
+      <div class="waveform-bar">
+        <div class="wave-bars" id="waveBars">
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+          <div class="wave-bar"></div><div class="wave-bar"></div>
+        </div>
+      </div>
+      <audio id="audioPlayer" controls></audio>
+
+      <div class="eq" id="eq">
+        <div class="eq-head">
+          <div class="eq-title">イコライザー</div>
+          <label class="eq-switch"><input type="checkbox" id="eqOn" checked> <span>有効</span></label>
+          <select id="eqPreset" class="eq-preset"></select>
+          <button class="eq-reset" type="button" onclick="eqReset()">リセット</button>
+        </div>
+        <div class="eq-stage">
+          <canvas id="eqSpectrum" width="640" height="120"></canvas>
+          <div class="eq-bands" id="eqBands"></div>
+        </div>
+        <div class="eq-note">再生音にのみ適用されます（ダウンロードする音声は加工されません）</div>
+      </div>
+
+      <a class="dl-btn" id="dlBtn">ダウンロード</a>
     </div>
 
     <div class="card">
@@ -1200,33 +1264,10 @@
       <div class="api-preview">
         <div class="api-preview-header">
           <div class="api-preview-title">API サンプル</div>
-          <button class="api-copy-btn" onclick="copyApiSample()" title="コピー">📋 コピー</button>
+          <button class="api-copy-btn" onclick="copyApiSample()" title="コピー">コピー</button>
         </div>
         <pre class="api-preview-code" id="apiSampleCode"></pre>
       </div>
-      <button class="btn-speak" id="speakBtn" onclick="speak()">
-        <span class="btn-text">🎵 音声を生成</span>
-      </button>
-      <div class="status" id="ttsStatus"></div>
-      <div id="accentResult" style="display:none; margin-top:1rem;">
-        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem;">アクセント</div>
-        <div id="accentPhraseViz" style="overflow-x:auto; display:flex; gap:1rem; flex-wrap:wrap;"></div>
-      </div>
-    </div>
-
-    <div class="card player-area" id="playerArea">
-      <div class="card-title">再生</div>
-      <div class="waveform-bar">
-        <div class="wave-bars" id="waveBars">
-          <div class="wave-bar"></div><div class="wave-bar"></div>
-          <div class="wave-bar"></div><div class="wave-bar"></div>
-          <div class="wave-bar"></div><div class="wave-bar"></div>
-          <div class="wave-bar"></div><div class="wave-bar"></div>
-        </div>
-      </div>
-      <audio id="audioPlayer" controls></audio>
-      <br>
-      <a class="dl-btn" id="dlBtn">⬇ ダウンロード</a>
     </div>
 
     <div class="card" style="animation-delay:0.25s">
@@ -1247,14 +1288,14 @@
            ondragover="uploadDragOver(event)" ondragleave="uploadDragLeave(event)" ondrop="uploadDrop(event)"
            onclick="document.getElementById('aivmxFile').click()">
         <input type="file" id="aivmxFile" accept=".aivmx" onclick="event.stopPropagation()" onchange="uploadFileSelected(event)">
-        <div class="upload-icon">📦</div>
+        <div class="upload-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div>
         <div class="upload-label">
           <strong>クリック</strong> またはここに .aivmx をドロップ
         </div>
         <div class="upload-filename" id="uploadFilename" style="display:none"></div>
       </div>
       <div class="upload-actions" id="uploadActions" style="display:none">
-        <button class="upload-btn" id="uploadBtn" onclick="installModel()">⬆ インストール</button>
+        <button class="upload-btn" id="uploadBtn" onclick="installModel()">インストール</button>
         <button class="upload-clear-btn" onclick="uploadClear()">クリア</button>
       </div>
       <div class="upload-progress" id="uploadProgress"></div>
@@ -1331,7 +1372,7 @@
 新田|真剣佑,アラタ|マッケンユウ,1|3,人名,7
 # 品詞・優先度は省略可（デフォルト: 固有名詞 / 5）
 # 複合語は | で各形態素を区切る</pre>
-        <button onclick="dictImportDownloadTemplate()" class="btn-ghost" style="margin-top:0.4rem;font-size:0.8rem">⬇ テンプレートをダウンロード</button>
+        <button onclick="dictImportDownloadTemplate()" class="btn-ghost" style="margin-top:0.4rem;font-size:0.8rem">テンプレートをダウンロード</button>
       </details>
 
       <div id="dictImportDrop"
@@ -1344,7 +1385,7 @@
       <input type="file" id="dictImportFile" accept=".csv,.txt" style="display:none" onchange="dictImportFileSelected(this)">
 
       <div style="display:flex;justify-content:flex-end;margin-top:0.8rem">
-        <button class="btn-primary" id="dictImportBtn" onclick="dictImportRun()" disabled>⬆ インポート</button>
+        <button class="btn-primary" id="dictImportBtn" onclick="dictImportRun()" disabled>インポート</button>
       </div>
       <div class="status" id="dictImportStatus"></div>
     </div>
@@ -1433,7 +1474,7 @@
       <input type="file" id="repImportFile" accept=".txt" style="display:none" onchange="repImportFileSelected(event)">
       <div style="display:flex;justify-content:flex-end;gap:0.6rem;margin-top:0.8rem;">
         <button class="btn-ghost" onclick="repImportClear()">クリア</button>
-        <button class="btn-primary" id="repImportBtn" onclick="repImportRun()" disabled>⬆ インポート</button>
+        <button class="btn-primary" id="repImportBtn" onclick="repImportRun()" disabled>インポート</button>
       </div>
       <div class="status" id="repImportStatus"></div>
     </div>
@@ -1607,8 +1648,8 @@
         style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.7rem;font-size:0.85rem;resize:vertical;line-height:1.8;margin-bottom:0.8rem;"
         placeholder="本日はご来院ありがとうございます。&#10;鼻尖形成や隆鼻術をご検討とのことですが…"></textarea>
       <div style="display:flex;gap:0.6rem;align-items:center;">
-        <button class="btn-primary" onclick="readerLoad()">📋 読み込む</button>
-        <button class="btn-ghost" onclick="readerClear()">🗑 クリア</button>
+        <button class="btn-primary" onclick="readerLoad()">読み込む</button>
+        <button class="btn-ghost" onclick="readerClear()">クリア</button>
         <span id="readerLineCount" style="font-size:0.78rem;color:var(--text-muted);margin-left:auto;"></span>
       </div>
     </div>
@@ -1617,7 +1658,7 @@
     <div id="readerTransport" style="display:none;" class="card">
       <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;">
         <button class="btn-primary" id="readerPlayAllBtn" onclick="readerPlayAll()">▶ 全て再生</button>
-        <button class="btn-ghost" id="readerStopBtn" onclick="readerStop()" disabled style="opacity:0.4;">⏹ 停止</button>
+        <button class="btn-ghost" id="readerStopBtn" onclick="readerStop()" disabled style="opacity:0.4;">停止</button>
         <button class="btn-ghost" onclick="readerReset()">↺ リセット</button>
         <span id="readerStatus" style="font-size:0.82rem;color:var(--text-muted);margin-left:auto;"></span>
       </div>
@@ -1631,18 +1672,18 @@
   </div><!-- /page-reader -->
 
   <!-- ============================
-       ⚙️ 設定
+       設定
        ============================ -->
   <div class="page" id="page-backends">
     <div class="card">
-      <div class="card-title">🖥 バックエンド稼働状況</div>
+      <div class="card-title">バックエンド稼働状況</div>
       <div id="bkSummary" class="bk-summary"></div>
       <div id="bkGrid" class="bk-grid"></div>
       <p id="bkFoot" style="color:var(--text-muted);font-size:.8em;margin-top:1em">読み込み中…</p>
     </div>
 
     <div class="card">
-      <div class="card-title">⚙ 台の管理（追加・削除）</div>
+      <div class="card-title">台の管理（追加・削除）</div>
       <p style="color:var(--text-muted);font-size:.9em;margin-bottom:1em">
         追加・削除は再起動なしで反映され、ルーターの <code>/data/backends.json</code> に保存されます（保存後は <code>.env</code> の AIVIS_BACKEND_URLS より優先されます）。
         上の稼働状況は管理トークンなしで見られます。
@@ -1651,7 +1692,7 @@
       <label class="label" for="backendsAdminToken">管理トークン</label>
       <div style="display:flex;gap:.5em;margin-bottom:.4em">
         <input class="input" id="backendsAdminToken" type="password" placeholder="ルーターの ADMIN_TOKEN" style="flex:1" autocomplete="off">
-        <button class="btn-ghost" onclick="backendsSaveToken()">💾 保存</button>
+        <button class="btn-ghost" onclick="backendsSaveToken()">保存</button>
       </div>
       <p style="color:var(--text-muted);font-size:.85em;margin-bottom:1.4em">ブラウザにのみ保存されます。</p>
 
@@ -1661,9 +1702,9 @@
       <label class="label" for="backendsNewUrl">台を追加</label>
       <div style="display:flex;gap:.5em;flex-wrap:wrap">
         <input class="input" id="backendsNewUrl" type="url" placeholder="http://192.168.0.22:10101" style="flex:1;min-width:16em">
-        <button class="btn-ghost" onclick="backendsTest()">🔍 接続テスト</button>
-        <button class="btn-primary" onclick="backendsAdd()">➕ 追加</button>
-        <button class="btn-ghost" onclick="backendsLoad()" title="再読み込み">🔄</button>
+        <button class="btn-ghost" onclick="backendsTest()">接続テスト</button>
+        <button class="btn-primary" onclick="backendsAdd()">追加</button>
+        <button class="btn-ghost" onclick="backendsLoad()" title="再読み込み">再読込</button>
       </div>
       <p style="color:var(--text-muted);font-size:.85em;margin-top:.6em">
         社内ネットワーク（プライベートIP）のサーバーのみ登録できます。追加時は接続とモデル（話者）の揃い具合を確認し、足りなければ登録されません（モデルのコピーは自動ではしないので、先にエンジンのデータフォルダをコピーしてください）。辞書は最初の台から自動でコピーされます。最後の1台は削除できません。
@@ -1673,7 +1714,7 @@
 
   <div class="page" id="page-settings">
     <div class="card">
-      <div class="card-title">⚙️ 接続設定</div>
+      <div class="card-title">接続設定</div>
       <p style="color:var(--text-dim);font-size:.9em;margin-bottom:1.2em">
         変更はブラウザに保存されます。空欄にして保存するとデフォルト値（ビルド時設定）に戻ります。
       </p>
@@ -1689,21 +1730,21 @@
       <label class="label" for="settingsApiKey">API キー（任意）</label>
       <div style="display:flex;gap:.5em;margin-bottom:.4em">
         <input class="input" id="settingsApiKey" type="password" placeholder="設定しない場合は空欄" style="flex:1">
-        <button class="btn-ghost" onclick="settingsToggleApiKeyVisibility()" id="settingsApiKeyToggle" title="表示/非表示">👁</button>
+        <button class="btn-ghost" onclick="settingsToggleApiKeyVisibility()" id="settingsApiKeyToggle" title="表示/非表示">表示</button>
       </div>
       <p style="color:var(--text-dim);font-size:.85em;margin-bottom:1.4em">
         設定すると全リクエストに <code>Authorization: Bearer &lt;key&gt;</code> ヘッダーを付与します。
       </p>
 
       <div style="display:flex;gap:.8em;align-items:center">
-        <button class="btn-primary" onclick="settingsSave()">💾 保存して再接続</button>
-        <button class="btn-ghost" onclick="settingsReset()">🗑 デフォルトに戻す</button>
+        <button class="btn-primary" onclick="settingsSave()">保存して再接続</button>
+        <button class="btn-ghost" onclick="settingsReset()">デフォルトに戻す</button>
         <span id="settingsSaveMsg" style="color:var(--success);font-size:.9em"></span>
       </div>
     </div>
 
     <div class="card" id="settingsStatusCard">
-      <div class="card-title">🔌 接続テスト</div>
+      <div class="card-title">接続テスト</div>
       <div id="settingsStatus" style="font-size:.9em;color:var(--text-dim)">保存後に自動で確認します…</div>
     </div>
   </div><!-- /page-settings -->
@@ -1714,7 +1755,7 @@
 <!-- 削除確認ダイアログ -->
 <div class="dialog-overlay" id="deleteDialog">
   <div class="dialog">
-    <h3>🗑 単語を削除</h3>
+    <h3>単語を削除</h3>
     <p><span class="dialog-word" id="deleteWordLabel"></span> を辞書から削除しますか？<br>この操作は取り消せません。</p>
     <div class="dialog-actions">
       <button class="btn-ghost" onclick="closeDeleteDialog()">キャンセル</button>
@@ -1818,7 +1859,7 @@ function switchTab(tab) {
 
 
 // ==========================================
-//  🖥 バックエンドタブ
+//  バックエンドタブ
 // ==========================================
 const _LS_ADMIN_TOKEN = 'aivis_admin_token';
 function getAdminToken() { try { return localStorage.getItem(_LS_ADMIN_TOKEN) || ''; } catch { return ''; } }
@@ -1925,13 +1966,13 @@ function bkRender(data) {
     const head = bkEl('div', 'bk-head');
     head.append(bkEl('span', 'bk-dot ' + (b.ok ? 'ok' : 'ng')));
     const nm = bkEl('div');
-    nm.append(bkEl('div', 'bk-name', (b.cloud ? 'Aivis Cloud' : `台 ${b.index}`) + (b.master ? ' 👑' : '')));
+    nm.append(bkEl('div', 'bk-name', (b.cloud ? 'Aivis Cloud' : `台 ${b.index}`) + ''));
     if (b.master) nm.append(bkEl('div', 'bk-sub', 'マスター（辞書・モデルの基準）'));
     const host = _bkNames[i] ? _bkNames[i].replace(/^https?:\/\//, '') : '';
     if (host) nm.append(bkEl('div', 'bk-sub', host));
     head.append(nm);
     const pend = st0 !== 'active';
-    const badge = bkEl('span', 'bk-badge', st0 === 'syncing' ? '🔄 同期中' : st0 === 'failed' ? '同期失敗' : (b.ok ? '稼働中' : '応答なし'));
+    const badge = bkEl('span', 'bk-badge', st0 === 'syncing' ? '同期中' : st0 === 'failed' ? '同期失敗' : (b.ok ? '稼働中' : '応答なし'));
     badge.style.color = st0 === 'syncing' ? '#f5b94a' : (b.ok && !pend) ? 'var(--success)' : 'var(--error)';
     head.append(badge);
     card.append(head);
@@ -2057,7 +2098,7 @@ function backendsRender(data) {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:.8em;padding:.6em .8em;border:1px solid var(--border);border-radius:8px;flex-wrap:wrap';
     const dot = document.createElement('span');
-    dot.textContent = pend ? '🔄' : '●';
+    dot.textContent = pend ? '◌' : '●';
     dot.style.color = b.state === 'syncing' ? '#f5b94a' : (b.ok && !pend) ? 'var(--success)' : 'var(--error)';
     const url = document.createElement('code');
     url.textContent = b.url;
@@ -2073,13 +2114,13 @@ function backendsRender(data) {
     if (data.editable && !pend && !b.cloud) {
       if (b.master) {
         const m = document.createElement('span');
-        m.textContent = '👑 マスター';
+        m.textContent = 'マスター';
         m.style.cssText = 'color:#f5b94a;font-weight:700;font-size:.85em';
         row.append(m);
       } else {
         const mb = document.createElement('button');
         mb.className = 'btn-ghost';
-        mb.textContent = '👑 マスターにする';
+        mb.textContent = 'マスターにする';
         mb.title = 'この台を辞書・モデルの基準にします（他の台へ辞書を反映）';
         mb.onclick = () => backendsSetMaster(b.url);
         row.append(mb);
@@ -2088,7 +2129,7 @@ function backendsRender(data) {
     if (data.editable) {
       const del = document.createElement('button');
       del.className = 'btn-danger';
-      del.textContent = pend ? '✖ 取消' : '🗑 削除';
+      del.textContent = pend ? '取消' : '削除';
       del.disabled = !pend && only;
       del.title = !pend && only ? '最後の1台は削除できません' : '';
       del.onclick = () => backendsRemove(b.url);
@@ -2105,9 +2146,9 @@ async function backendsSetMaster(url) {
     const r = await backendsApi('PUT', '/backends/master', { url });
     backendsRender(r);
     const failed = (r.dict && r.dict.failed) || [];
-    backendsSay(failed.length ? `👑 マスターを切り替えました（辞書の反映に失敗: ${failed.length} 台）` : '👑 マスターを切り替えました', failed.length ? 'error' : 'ok');
+    backendsSay(failed.length ? `マスターを切り替えました（辞書の反映に失敗: ${failed.length} 台）` : 'マスターを切り替えました', failed.length ? 'error' : 'ok');
     bkRefresh();
-  } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
+  } catch (e) { backendsSay(`${e.message}`, 'error'); }
 }
 
 async function backendsLoad(silent) {
@@ -2131,9 +2172,9 @@ async function backendsTest() {
   backendsSay('接続テスト中…');
   try {
     const r = await backendsApi('POST', '/backends/test', { url });
-    if (r.ok) backendsSay(`✅ 接続できました（${r.latency_ms} ms、スピーカー ${r.speakers} 件）`, 'ok');
-    else backendsSay(`❌ 接続できません: ${r.error}`, 'error');
-  } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
+    if (r.ok) backendsSay(`接続できました（${r.latency_ms} ms、スピーカー ${r.speakers} 件）`, 'ok');
+    else backendsSay(`接続できません: ${r.error}`, 'error');
+  } catch (e) { backendsSay(`${e.message}`, 'error'); }
 }
 
 async function backendsAdd() {
@@ -2146,12 +2187,12 @@ async function backendsAdd() {
     backendsRender(data);
     const a = data.added || {};
     if (a.state === 'syncing') {
-      backendsSay(`🔄 同期を開始しました（不足モデル ${a.missing_models} 件＋辞書）。完了すると自動で振り分けに加わります。進み具合は下の一覧とダッシュボードで確認できます。`, 'ok');
+      backendsSay(`同期を開始しました（不足モデル ${a.missing_models} 件＋辞書）。完了すると自動で振り分けに加わります。進み具合は下の一覧とダッシュボードで確認できます。`, 'ok');
       bkRefresh();
     } else {
-      backendsSay(`✅ 追加しました（計 ${data.backends.length} 台、辞書 ${a.synced_words || 0} 語をコピー）`, 'ok');
+      backendsSay(`追加しました（計 ${data.backends.length} 台、辞書 ${a.synced_words || 0} 語をコピー）`, 'ok');
     }
-  } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
+  } catch (e) { backendsSay(`${e.message}`, 'error'); }
 }
 
 async function backendsRemove(url) {
@@ -2159,13 +2200,13 @@ async function backendsRemove(url) {
   try {
     const data = await backendsApi('DELETE', '/backends?url=' + encodeURIComponent(url));
     backendsRender(data);
-    backendsSay(`🗑 外しました（${data.backends.length} 件）`, 'ok');
+    backendsSay(`外しました（${data.backends.length} 件）`, 'ok');
     bkRefresh();
-  } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
+  } catch (e) { backendsSay(`${e.message}`, 'error'); }
 }
 
 // ==========================================
-//  ⚙️ 設定タブ
+//  設定タブ
 // ==========================================
 function settingsInit() {
   try {
@@ -2178,8 +2219,8 @@ function settingsInit() {
 function settingsToggleApiKeyVisibility() {
   const inp = document.getElementById('settingsApiKey');
   const btn = document.getElementById('settingsApiKeyToggle');
-  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
-  else { inp.type = 'password'; btn.textContent = '👁'; }
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '隠す'; }
+  else { inp.type = 'password'; btn.textContent = '表示'; }
 }
 
 async function settingsSave() {
@@ -2191,7 +2232,7 @@ async function settingsSave() {
   } catch { alert('localStorage への保存に失敗しました（プライベートウィンドウでは使えません）'); return; }
   document.getElementById('settingsApiUrlCurrent').textContent = getApiUrl();
   const msg = document.getElementById('settingsSaveMsg');
-  msg.textContent = '✅ 保存しました';
+  msg.textContent = '保存しました';
   setTimeout(() => { msg.textContent = ''; }, 3000);
   await settingsTestConnection();
   // スピーカー一覧を新しいURLで再取得
@@ -2206,7 +2247,7 @@ function settingsReset() {
   document.getElementById('settingsApiKey').value = '';
   document.getElementById('settingsApiUrlCurrent').textContent = getApiUrl();
   const msg = document.getElementById('settingsSaveMsg');
-  msg.textContent = '🔄 デフォルトに戻しました';
+  msg.textContent = 'デフォルトに戻しました';
   setTimeout(() => { msg.textContent = ''; }, 3000);
   loadSpeakers();
   loadModels();
@@ -2214,17 +2255,17 @@ function settingsReset() {
 
 async function settingsTestConnection() {
   const el = document.getElementById('settingsStatus');
-  el.textContent = '🔄 接続確認中…';
+  el.textContent = '接続確認中…';
   try {
     const res = await apiFetch('/health');
     if (res.ok) {
       const data = await res.json().catch(() => ({}));
-      el.innerHTML = `<span style="color:var(--success)">✅ 接続成功</span>　<code>${getApiUrl()}</code>　provider: <strong>${data.provider || '—'}</strong>`;
+      el.innerHTML = `<span style="color:var(--success)">接続成功</span>　<code>${getApiUrl()}</code>　provider: <strong>${data.provider || '—'}</strong>`;
     } else {
-      el.innerHTML = `<span style="color:var(--error)">❌ HTTP ${res.status}</span>　<code>${getApiUrl()}</code>`;
+      el.innerHTML = `<span style="color:var(--error)">HTTP ${res.status}</span>　<code>${getApiUrl()}</code>`;
     }
   } catch (e) {
-    el.innerHTML = `<span style="color:var(--error)">❌ 接続失敗</span>　${e.message}`;
+    el.innerHTML = `<span style="color:var(--error)">接続失敗</span>　${e.message}`;
   }
 }
 
@@ -2270,13 +2311,13 @@ function updatePresetBar() {
     badge.innerHTML = `<span class="preset-active-header-badge">プリセット適用中</span>`;
     // アクションバー：上書き保存 + 削除
     bar.innerHTML =
-      `<button class="preset-update-btn" id="presetSaveBtn" onclick="savePreset()">💾 プリセットを上書き保存</button>` +
-      `<button class="preset-del-btn" onclick="deletePreset()">🗑 削除</button>`;
+      `<button class="preset-update-btn" id="presetSaveBtn" onclick="savePreset()">プリセットを上書き保存</button>` +
+      `<button class="preset-del-btn" onclick="deletePreset()">削除</button>`;
   } else {
     badge.innerHTML = '';
     // アクションバー：新規保存
     bar.innerHTML =
-      `<button class="preset-save-btn" id="presetSaveBtn" onclick="savePreset()">💾 現在のパラメータをプリセット保存</button>`;
+      `<button class="preset-save-btn" id="presetSaveBtn" onclick="savePreset()">現在のパラメータをプリセット保存</button>`;
   }
 }
 
@@ -2418,7 +2459,7 @@ async function savePreset() {
     updatePresetBar();
     showTtsStatus('✓ プリセットを保存しました', 'success');
   } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = '💾 現在のパラメータをプリセット保存'; }
+    if (btn) { btn.disabled = false; btn.textContent = '現在のパラメータをプリセット保存'; }
     showTtsStatus('プリセットの保存に失敗しました', 'error');
   }
 }
@@ -2507,7 +2548,7 @@ function copyApiSample() {
   navigator.clipboard.writeText(code).then(() => {
     const btn = document.querySelector('.api-copy-btn');
     btn.textContent = '✓ コピー済み';
-    setTimeout(() => btn.textContent = '📋 コピー', 1500);
+    setTimeout(() => btn.textContent = 'コピー', 1500);
   });
 }
 
@@ -2525,6 +2566,124 @@ document.getElementById('textInput').addEventListener('input', function() {
   updateApiSample();
 });
 
+// ---- イコライザー（Web Audio API: 5バンド + スペクトラム）
+const EQ_BANDS = [
+  { f: 80,    type: 'lowshelf',  label: '80' },
+  { f: 300,   type: 'peaking',   label: '300' },
+  { f: 1000,  type: 'peaking',   label: '1k' },
+  { f: 3500,  type: 'peaking',   label: '3.5k' },
+  { f: 10000, type: 'highshelf', label: '10k' },
+];
+const EQ_PRESETS = {
+  'フラット':       [0, 0, 0, 0, 0],
+  '声をくっきり':   [-3, -1, 1, 4, 2],
+  '低音を強く':     [6, 3, 0, -1, -1],
+  '高音をやわらかく': [1, 0, 0, -3, -7],
+  '電話風':         [-12, -5, 5, 4, -9],
+};
+const EQ_LS = 'aivis_eq_v1';
+let _eq = { ctx: null, filters: [], analyser: null, gains: [0, 0, 0, 0, 0], on: true, raf: 0 };
+
+function eqLoad() {
+  try {
+    const d = JSON.parse(localStorage.getItem(EQ_LS) || 'null');
+    if (d && Array.isArray(d.gains) && d.gains.length === 5) { _eq.gains = d.gains.map(Number); _eq.on = d.on !== false; }
+  } catch {}
+}
+function eqSave() {
+  try { localStorage.setItem(EQ_LS, JSON.stringify({ gains: _eq.gains, on: _eq.on })); } catch {}
+}
+function eqApply() {
+  _eq.filters.forEach((f, i) => { f.gain.value = _eq.on ? _eq.gains[i] : 0; });
+  document.getElementById('eq').classList.toggle('off', !_eq.on);
+}
+function eqSyncUi() {
+  document.querySelectorAll('#eqBands input').forEach((el, i) => {
+    el.value = _eq.gains[i];
+    el.parentElement.querySelector('.db').textContent = (_eq.gains[i] > 0 ? '+' : '') + _eq.gains[i];
+  });
+  document.getElementById('eqOn').checked = _eq.on;
+  const sel = document.getElementById('eqPreset');
+  const hit = Object.entries(EQ_PRESETS).find(([, v]) => v.every((x, i) => x === _eq.gains[i]));
+  sel.value = hit ? hit[0] : '';
+}
+function eqInitUi() {
+  eqLoad();
+  const box = document.getElementById('eqBands');
+  EQ_BANDS.forEach((b, i) => {
+    const col = document.createElement('div'); col.className = 'eq-band';
+    const db = document.createElement('div'); db.className = 'db';
+    const r = document.createElement('input'); r.type = 'range'; r.min = -12; r.max = 12; r.step = 1;
+    r.setAttribute('aria-label', b.label + ' Hz');
+    r.oninput = () => { _eq.gains[i] = Number(r.value); eqApply(); eqSyncUi(); eqSave(); };
+    r.ondblclick = () => { _eq.gains[i] = 0; eqApply(); eqSyncUi(); eqSave(); };
+    const hz = document.createElement('div'); hz.className = 'hz'; hz.textContent = b.label;
+    col.append(db, r, hz); box.append(col);
+  });
+  const sel = document.getElementById('eqPreset');
+  const custom = document.createElement('option'); custom.value = ''; custom.textContent = 'カスタム'; sel.append(custom);
+  Object.keys(EQ_PRESETS).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; sel.append(o); });
+  sel.onchange = () => { if (EQ_PRESETS[sel.value]) { _eq.gains = EQ_PRESETS[sel.value].slice(); eqApply(); eqSyncUi(); eqSave(); } };
+  document.getElementById('eqOn').onchange = e => { _eq.on = e.target.checked; eqApply(); eqSave(); };
+  eqSyncUi();
+}
+function eqReset() { _eq.gains = [0, 0, 0, 0, 0]; _eq.on = true; eqApply(); eqSyncUi(); eqSave(); }
+
+// 最初の再生時に AudioContext を作る（ユーザー操作後でないと開始できないため）
+function eqEnsureGraph() {
+  if (_eq.ctx) { if (_eq.ctx.state === 'suspended') _eq.ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  const audio = document.getElementById('audioPlayer');
+  const ctx = new AC();
+  const src = ctx.createMediaElementSource(audio);
+  let node = src;
+  _eq.filters = EQ_BANDS.map(b => {
+    const f = ctx.createBiquadFilter(); f.type = b.type; f.frequency.value = b.f; f.Q.value = 1.0; f.gain.value = 0;
+    node.connect(f); node = f; return f;
+  });
+  const an = ctx.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0.8;
+  node.connect(an); an.connect(ctx.destination);
+  _eq.ctx = ctx; _eq.analyser = an;
+  eqApply(); eqDraw();
+}
+function eqDraw() {
+  const cv = document.getElementById('eqSpectrum');
+  const g = cv.getContext('2d');
+  const an = _eq.analyser;
+  const buf = new Uint8Array(an.frequencyBinCount);
+  const css = getComputedStyle(document.documentElement);
+  const c1 = css.getPropertyValue('--accent').trim() || '#4f8eff';
+  const c2 = css.getPropertyValue('--accent2').trim() || '#a855f7';
+  const loop = () => {
+    _eq.raf = requestAnimationFrame(loop);
+    const w = cv.clientWidth * devicePixelRatio, h = cv.clientHeight * devicePixelRatio;
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    an.getByteFrequencyData(buf);
+    g.clearRect(0, 0, w, h);
+    const n = 64, nyq = _eq.ctx.sampleRate / 2;
+    const grad = g.createLinearGradient(0, h, 0, 0); grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+    g.fillStyle = grad;
+    for (let i = 0; i < n; i++) {
+      // 対数軸 40Hz〜16kHz
+      const f0 = 40 * Math.pow(400, i / n), f1 = 40 * Math.pow(400, (i + 1) / n);
+      const b0 = Math.floor(f0 / nyq * buf.length), b1 = Math.max(b0 + 1, Math.floor(f1 / nyq * buf.length));
+      let m = 0; for (let k = b0; k < b1 && k < buf.length; k++) m = Math.max(m, buf[k]);
+      const bh = (m / 255) * h * 0.95, bw = w / n;
+      g.globalAlpha = 0.55; g.fillRect(i * bw + 1, h - bh, bw - 2, bh);
+    }
+    g.globalAlpha = 1;
+  };
+  cancelAnimationFrame(_eq.raf); loop();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  eqInitUi();
+  document.getElementById('audioPlayer').addEventListener('play', eqEnsureGraph);
+  document.getElementById('textInput').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); speak(); }
+  });
+});
+
 async function speak() {
   const text = document.getElementById('textInput').value.trim();
   const speakerId = parseInt(document.getElementById('speakerSelect').value);
@@ -2535,7 +2694,7 @@ async function speak() {
 
   btn.disabled = true;
   btn.classList.add('loading');
-  btn.querySelector('.btn-text').textContent = '⏳ 生成中...';
+  btn.querySelector('.btn-text').textContent = '生成中...';
   document.getElementById('ttsStatus').className = 'status';
 
   try {
@@ -2578,7 +2737,7 @@ async function speak() {
   } finally {
     btn.disabled = false;
     btn.classList.remove('loading');
-    btn.querySelector('.btn-text').textContent = '🎵 音声を生成';
+    btn.querySelector('.btn-text').textContent = '音声を生成';
   }
 }
 
@@ -2681,8 +2840,8 @@ async function loadModels() {
             <div class="badge-dot"></div>
             ${label}
           </div>
-          ${on ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')" title="全台のVRAMから解放">⏏ 解放</button>` : ''}
-          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')" title="全台からアンインストール">🗑 削除</button>
+          ${on ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')" title="全台のVRAMから解放">解放</button>` : ''}
+          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')" title="全台からアンインストール">削除</button>
         </div>
       </div>`;
     }).join('');
@@ -2783,7 +2942,7 @@ async function unloadModel(uuid, name) {
     showTtsStatus(`✓ ${name} をVRAMから解放しました`, 'success');
   } catch(e) {
     btn.disabled = false;
-    btn.textContent = '⏏ 解放';
+    btn.textContent = '解放';
     showTtsStatus(`エラー: ${name} の解放に失敗しました`, 'error');
   }
 }
@@ -2799,7 +2958,7 @@ async function uninstallModel(uuid, name) {
     await loadModels();
     showTtsStatus(`✓ ${name} をアンインストールしました`, 'success');
   } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = '🗑 削除'; }
+    if (btn) { btn.disabled = false; btn.textContent = '削除'; }
     showTtsStatus(`エラー: ${e.message}`, 'error');
   }
 }
@@ -3119,8 +3278,8 @@ function renderDict() {
         </div>
         <div class="word-actions">
           <button class="btn-play" onclick="playWord('${esc(surface)}', this)">▶ 再生</button>
-          <button class="btn-edit" onclick="toggleEdit('${uuid}')">✏ 編集</button>
-          <button class="btn-danger" onclick="openDeleteDialog('${uuid}','${esc(surface)}')">🗑</button>
+          <button class="btn-edit" onclick="toggleEdit('${uuid}')">編集</button>
+          <button class="btn-danger" onclick="openDeleteDialog('${uuid}','${esc(surface)}')">削除</button>
         </div>
       </div>
       <div class="word-edit-form" id="wedit-${uuid}">
@@ -3165,7 +3324,7 @@ function renderDict() {
         </div>
         <div class="edit-actions">
           <button class="btn-ghost" onclick="toggleEdit('${uuid}')">キャンセル</button>
-          <button class="btn-primary" onclick="updateWord('${uuid}')">💾 保存</button>
+          <button class="btn-primary" onclick="updateWord('${uuid}')">保存</button>
         </div>
       </div>
     </div>`;
@@ -3325,7 +3484,7 @@ async function updateWord(uuid) {
     showDictStatus(`✓ 「${surface}」を更新しました`, 'success');
   } catch(e) {
     saveBtn.disabled = false;
-    saveBtn.textContent = '💾 保存';
+    saveBtn.textContent = '保存';
     showDictStatus(`エラー: ${e.message}`, 'error');
   }
 }
@@ -3342,7 +3501,7 @@ async function playWord(text, btn) {
     return;
   }
   btn.disabled = true;
-  btn.textContent = '⏳';
+  btn.textContent = '…';
   try {
     const res = await apiFetch(`/speak`, {
       method: 'POST',
@@ -3476,7 +3635,7 @@ function renderReplacements() {
           <span style="color:var(--text);font-size:0.9rem">${esc(dst) || '<em style="color:var(--text-muted)">(空文字)</em>'}</span>
         </div>
         <div class="word-actions">
-          <button class="btn-danger" onclick="deleteReplacement('${esc(src)}', this)">🗑</button>
+          <button class="btn-danger" onclick="deleteReplacement('${esc(src)}', this)">削除</button>
         </div>
       </div>
     </div>`).join('');
@@ -3541,7 +3700,7 @@ async function deleteReplacement(src, btn) {
     btn.dataset.confirm = '1';
     btn.textContent = '本当に削除';
     btn.style.background = 'var(--error)';
-    setTimeout(() => { btn.dataset.confirm = ''; btn.textContent = '🗑'; btn.style.background = ''; }, 3000);
+    setTimeout(() => { btn.dataset.confirm = ''; btn.textContent = '削除'; btn.style.background = ''; }, 3000);
     return;
   }
   try {
@@ -3599,7 +3758,7 @@ function repImportFileSelected(e) {
 
 function repImportSetFile(file) {
   _repImportFile = file;
-  document.getElementById('repImportFileName').textContent = `📄 ${file.name}  (${(file.size / 1024).toFixed(1)} KB)`;
+  document.getElementById('repImportFileName').textContent = `${file.name}  (${(file.size / 1024).toFixed(1)} KB)`;
   document.getElementById('repImportBtn').disabled = false;
   document.getElementById('repImportStatus').className = 'status';
 }
@@ -3634,7 +3793,7 @@ async function repImportRun() {
   if (!_repImportFile) return;
   const btn = document.getElementById('repImportBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ インポート中...';
+  btn.textContent = 'インポート中...';
   const statusEl = document.getElementById('repImportStatus');
   statusEl.className = 'status';
 
@@ -3642,7 +3801,7 @@ async function repImportRun() {
     const mode = document.querySelector('input[name="repImportMode"]:checked').value;
     if (mode === 'replace' && !confirm('既存のルールを全て削除してファイルの内容で置き換えます。よろしいですか？')) {
       btn.disabled = false;
-      btn.textContent = '⬆ インポート';
+      btn.textContent = 'インポート';
       return;
     }
     const form = new FormData();
@@ -3661,7 +3820,7 @@ async function repImportRun() {
     statusEl.className = 'status error';
     btn.disabled = false;
   } finally {
-    btn.textContent = '⬆ インポート';
+    btn.textContent = 'インポート';
   }
 }
 
@@ -3697,7 +3856,7 @@ function dictImportFileSelected(input) {
 
 function dictImportSetFile(file) {
   _dictImportFile = file;
-  document.getElementById('dictImportFileName').textContent = `📄 ${file.name}  (${(file.size / 1024).toFixed(1)} KB)`;
+  document.getElementById('dictImportFileName').textContent = `${file.name}  (${(file.size / 1024).toFixed(1)} KB)`;
   document.getElementById('dictImportBtn').disabled = false;
   document.getElementById('dictImportStatus').className = 'status';
 }
@@ -3721,7 +3880,7 @@ async function dictImportRun() {
   if (!_dictImportFile) return;
   const btn = document.getElementById('dictImportBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ インポート中...';
+  btn.textContent = 'インポート中...';
   const statusEl = document.getElementById('dictImportStatus');
   statusEl.className = 'status';
 
@@ -3750,7 +3909,7 @@ async function dictImportRun() {
     statusEl.className = 'status error';
     btn.disabled = false;
   } finally {
-    btn.textContent = '⬆ インポート';
+    btn.textContent = 'インポート';
   }
 }
 
@@ -3799,9 +3958,9 @@ async function loadHistory(page) {
           <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:0.4rem;">
             <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">${dateStr}</span>
             <span style="font-size:0.8rem;color:var(--accent);font-weight:600;flex:1;">${esc(voice)}</span>
-            ${item.backend ? `<span title="この音声を生成した台" style="font-size:0.7rem;font-family:monospace;color:var(--text-muted);border:1px solid var(--border);border-radius:99px;padding:0.05rem 0.5rem;white-space:nowrap;">🖥 ${esc(item.backend.replace(/^https?:\/\//, ''))}</span>` : ''}
+            ${item.backend ? `<span title="この音声を生成した台" style="font-size:0.7rem;font-family:monospace;color:var(--text-muted);border:1px solid var(--border);border-radius:99px;padding:0.05rem 0.5rem;white-space:nowrap;">${esc(item.backend.replace(/^https?:\/\//, ''))}</span>` : ''}
             <button id="hist-play-${idx}" onclick="histPlay(this,${idx})" style="${_histBtnStyle}">▶ 再生</button>
-            <button id="hist-copy-${idx}" onclick="histCopy(this,${idx})" style="${_histBtnStyle}">📋 コピー</button>
+            <button id="hist-copy-${idx}" onclick="histCopy(this,${idx})" style="${_histBtnStyle}">コピー</button>
           </div>
           <div style="font-size:0.9rem;word-break:break-all;">${esc(item.original_text)}</div>
           ${changed ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem;">→ 置換後: ${esc(item.processed_text)}</div>` : ''}
@@ -3843,7 +4002,7 @@ function histCopy(btn, idx) {
     btn.style.color = ok ? 'var(--success)' : 'var(--error)';
     btn.style.borderColor = ok ? 'var(--success)' : 'var(--error)';
     setTimeout(() => {
-      btn.textContent = '📋 コピー';
+      btn.textContent = 'コピー';
       btn.style.color = 'var(--text-muted)';
       btn.style.borderColor = 'var(--border)';
     }, 1500);
@@ -3872,7 +4031,7 @@ async function histPlay(btn, idx) {
   const item = _histItems[idx];
   if (_histAudio) { _histAudio.pause(); _histAudio = null; }
 
-  btn.textContent = '⏳';
+  btn.textContent = '…';
   btn.disabled = true;
 
   try {
@@ -3894,7 +4053,7 @@ async function histPlay(btn, idx) {
 
     const url = URL.createObjectURL(await res.blob());
     _histAudio = new Audio(url);
-    btn.textContent = '⏹ 停止';
+    btn.textContent = '停止';
     btn.disabled = false;
     btn.onclick = () => {
       _histAudio.pause();
@@ -3972,7 +4131,7 @@ function kanaLoadFile(file) {
   const reader = new FileReader();
   reader.onload = ev => {
     document.getElementById('kanaInput').value = ev.target.result;
-    document.getElementById('kanaFileName').textContent = `📄 ${file.name}`;
+    document.getElementById('kanaFileName').textContent = `${file.name}`;
   };
   reader.readAsText(file, 'utf-8');
 }
@@ -4081,11 +4240,11 @@ async function kanaRunLlmVerify() {
       _kanaLlmEnabled = s.enabled;
       _kanaLlmModel = s.model || '';
       if (!s.enabled) {
-        statusEl.innerHTML = '🤖 LLM未設定 — <code style="font-size:0.75rem;">LLM_MODEL</code> 環境変数を設定すると読みの正誤を自動判定できます';
+        statusEl.innerHTML = 'LLM未設定 — <code style="font-size:0.75rem;">LLM_MODEL</code> 環境変数を設定すると読みの正誤を自動判定できます';
         return;
       }
     } catch(e) {
-      statusEl.textContent = '🤖 LLMステータス取得失敗';
+      statusEl.textContent = 'LLMステータス取得失敗';
       return;
     }
   } else if (!_kanaLlmEnabled) {
@@ -4101,13 +4260,13 @@ async function kanaRunLlmVerify() {
   kanaRenderAll();
 
   const validRows = _kanaRows.filter(r => !r.queryError && r.kana !== null && !(r.sources || []).length);
-  if (!validRows.length) { statusEl.textContent = `🤖 ${_kanaLlmModel} — LLM対象なし（全件設定済み）`; return; }
+  if (!validRows.length) { statusEl.textContent = `${_kanaLlmModel} — LLM対象なし（全件設定済み）`; return; }
 
   const BATCH = 10;
   let done = 0;
   for (let i = 0; i < validRows.length; i += BATCH) {
     const batch = validRows.slice(i, i + BATCH);
-    statusEl.textContent = `🤖 ${_kanaLlmModel} で確認中... ${done} / ${validRows.length}`;
+    statusEl.textContent = `${_kanaLlmModel} で確認中... ${done} / ${validRows.length}`;
     try {
       const res = await apiFetch(`/kana_verify`, {
         method: 'POST',
@@ -4116,7 +4275,7 @@ async function kanaRunLlmVerify() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        statusEl.textContent = `🤖 LLMエラー: ${err.detail || res.status}`;
+        statusEl.textContent = `LLMエラー: ${err.detail || res.status}`;
         return;
       }
       const results = await res.json();
@@ -4127,12 +4286,12 @@ async function kanaRunLlmVerify() {
       done += batch.length;
       kanaRenderAll();
     } catch(e) {
-      statusEl.textContent = `🤖 LLMエラー: ${e.message}`;
+      statusEl.textContent = `LLMエラー: ${e.message}`;
       return;
     }
   }
   const wrong = _kanaRows.filter(r => r.llm && !r.llm.correct).length;
-  statusEl.textContent = `🤖 ${_kanaLlmModel} — ${validRows.length}件中 ${wrong}件に問題あり`;
+  statusEl.textContent = `${_kanaLlmModel} — ${validRows.length}件中 ${wrong}件に問題あり`;
 }
 
 function kanaRenderAll() {
@@ -4149,8 +4308,8 @@ function kanaRowHtml(idx) {
 
   const sourceBadges = (row.sources || []).map(s =>
     s === 'replacement'
-      ? `<span style="font-size:0.68rem;background:rgba(255,180,0,0.15);color:#ffb400;border:1px solid rgba(255,180,0,0.4);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">🔄 置換</span>`
-      : `<span style="font-size:0.68rem;background:rgba(79,142,255,0.12);color:var(--accent);border:1px solid rgba(79,142,255,0.35);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">📖 辞書</span>`
+      ? `<span style="font-size:0.68rem;background:rgba(255,180,0,0.15);color:#ffb400;border:1px solid rgba(255,180,0,0.4);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">置換</span>`
+      : `<span style="font-size:0.68rem;background:rgba(79,142,255,0.12);color:var(--accent);border:1px solid rgba(79,142,255,0.35);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">辞書</span>`
   ).join('');
 
   const kanaCell = loading
@@ -4200,7 +4359,7 @@ function kanaRowHtml(idx) {
     </div>
     <div style="display:flex;flex-direction:column;gap:0.5rem;">
       <div>
-        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.3rem;">🔄 置換ルールに追加（テキストを別の読み方に置き換え）</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.3rem;">置換ルールに追加（テキストを別の読み方に置き換え）</div>
         <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
           <span style="font-size:0.82rem;white-space:nowrap;">${esc(row.text)} →</span>
           <input id="kana-rep-dst-${idx}" type="text" value="${esc(row.kana)}"
@@ -4212,7 +4371,7 @@ function kanaRowHtml(idx) {
       </div>
       <hr style="border:none;border-top:1px solid var(--border);">
       <div>
-        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.3rem;">📖 単語辞書に登録（正確なアクセントも設定できます）</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.3rem;">単語辞書に登録（正確なアクセントも設定できます）</div>
         <button onclick="kanaGoToDict(${idx})" style="${_histBtnStyle}">単語辞書タブへ →</button>
       </div>
     </div>
@@ -4242,7 +4401,7 @@ async function kanaPlay(btn, idx) {
   const row = _kanaRows[idx];
   if (_kanaAudio) { _kanaAudio.pause(); _kanaAudio = null; }
   const speakerId = parseInt(document.getElementById('kanaSpeakerSelect').value);
-  btn.textContent = '⏳';
+  btn.textContent = '…';
   btn.disabled = true;
   try {
     const res = await apiFetch(`/speak`, {
@@ -4253,7 +4412,7 @@ async function kanaPlay(btn, idx) {
     if (!res.ok) throw new Error(await res.text());
     const url = URL.createObjectURL(await res.blob());
     _kanaAudio = new Audio(url);
-    btn.textContent = '⏹';
+    btn.textContent = '停止';
     btn.disabled = false;
     _kanaAudio.play();
     _kanaAudio.onended = () => {
@@ -4386,17 +4545,17 @@ function _readerSetState(i, state) {
   if (state === 'playing') {
     item.style.background = 'rgba(245,158,11,0.10)';
     item.style.borderLeft = '3px solid #f59e0b';
-    btn.innerHTML = '⏸'; btn.disabled = true; stat.textContent = '';
+    btn.innerHTML = '…'; btn.disabled = true; stat.textContent = '';
     item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else if (state === 'loading') {
     item.style.background = 'rgba(79,142,255,0.06)';
-    btn.textContent = '⏳'; btn.disabled = true; stat.textContent = '';
+    btn.textContent = '…'; btn.disabled = true; stat.textContent = '';
     item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else if (state === 'done') {
     item.style.opacity = '0.45';
     btn.textContent = '✓'; btn.disabled = false; stat.textContent = '';
   } else if (state === 'error') {
-    btn.textContent = '!'; btn.disabled = false; stat.textContent = '⚠';
+    btn.textContent = '!'; btn.disabled = false; stat.textContent = '!';
   } else {
     item.style.opacity = '';
     btn.textContent = '▶'; btn.disabled = false; stat.textContent = '';
@@ -4471,7 +4630,7 @@ function readerStop() {
   document.getElementById('readerPlayAllBtn').disabled = false;
   document.getElementById('readerStopBtn').disabled = true;
   document.getElementById('readerStopBtn').style.opacity = '0.4';
-  document.getElementById('readerStatus').textContent = '⏹ 停止';
+  document.getElementById('readerStatus').textContent = '停止';
 }
 
 function readerReset() {
