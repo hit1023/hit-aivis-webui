@@ -466,6 +466,20 @@
 
   /* Audio */
 
+
+  /* 折りたたみ（設定系のカード） */
+  .fold-head { cursor:pointer; user-select:none; gap:.7rem; justify-content:flex-start !important; }
+  .fold-head > .card-title, .fold-head > .eq-title { margin-right:auto; }
+  .fold-head > .card-title, .fold-head > .eq-title { margin-bottom:0; }
+  .fold-chev { width:.5rem; height:.5rem; border-right:2px solid var(--text-muted); border-bottom:2px solid var(--text-muted); transform:rotate(45deg); transition:transform .2s; flex:none; margin:0 .3rem 0 .1rem; }
+  .fold.closed .fold-chev { transform:rotate(-45deg); }
+  .fold-sum { display:none; flex:1; min-width:0; font-size:.75rem; color:var(--text-muted); font-family:monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fold.closed .fold-sum { display:block; }
+  .fold.closed .fold-body { display:none; }
+  .fold.closed .fold-head { margin-bottom:0; }
+  .fold.closed .eq-head { margin-bottom:0; }
+  .fold-head:hover .fold-chev { border-color:var(--accent); }
+
   /* 生成ボタンの行 */
   .text-foot { display:flex; align-items:center; gap:.8rem; margin-top:.7rem; }
   .text-foot .char-count { margin:0; margin-right:auto; }
@@ -1196,7 +1210,7 @@
       </div>
       <audio id="audioPlayer" controls></audio>
 
-      <div class="eq" id="eq">
+      <div class="eq fold" id="eq" data-fold="eq" data-fold-head=".eq-head">
         <div class="eq-head">
           <div class="eq-title">イコライザー</div>
           <label class="eq-switch"><input type="checkbox" id="eqOn" checked> <span>有効</span></label>
@@ -1213,7 +1227,7 @@
       <a class="dl-btn" id="dlBtn">ダウンロード</a>
     </div>
 
-    <div class="card">
+    <div class="card fold" data-fold="params" data-fold-head=".param-card-header">
       <div class="param-card-header">
         <div class="card-title" style="margin-bottom:0">パラメータ</div>
         <div id="presetActiveBadge"></div>
@@ -1270,7 +1284,7 @@
       </div>
     </div>
 
-    <div class="card" style="animation-delay:0.25s">
+    <div class="card fold" data-fold="vram" data-fold-head=".vram-header" style="animation-delay:0.25s">
       <div class="vram-header">
         <div class="card-title" style="margin-bottom:0">VRAMロード状態</div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadModels()">
@@ -2676,8 +2690,66 @@ function eqDraw() {
   };
   cancelAnimationFrame(_eq.raf); loop();
 }
+
+// ---- 折りたたみ（状態は localStorage に保存。既定は閉じる）
+const FOLD_LS = 'aivis_fold_v1';
+function foldState() { try { return JSON.parse(localStorage.getItem(FOLD_LS) || '{}'); } catch { return {}; } }
+function foldSummaryText(key) {
+  const v = id => { const e = document.getElementById(id); return e ? e.value : '-'; };
+  if (key === 'params') {
+    const badge = document.querySelector('#presetActiveBadge');
+    const pre = badge && badge.textContent.trim();
+    return (pre ? pre + ' / ' : '') + `話速 ${v('speed')}  音高 ${v('pitch')}  抑揚 ${v('intonation')}  音量 ${v('volume')}  緩急 ${v('tempoDynamics')}  無音 ${v('pauseLengthScale')}`;
+  }
+  if (key === 'vram') {
+    const rows = document.querySelectorAll('#modelList .model-item, #modelList > div:not(.vram-empty)').length;
+    const upd = document.getElementById('lastUpdated');
+    return rows ? `モデル ${rows} 件` + (upd && upd.textContent ? '  ' + upd.textContent : '') : '';
+  }
+  if (key === 'eq') {
+    if (typeof _eq === 'undefined') return '';
+    if (!_eq.on) return 'オフ';
+    const sel = document.getElementById('eqPreset');
+    return sel && sel.value ? sel.value : 'カスタム  ' + _eq.gains.map(g => (g > 0 ? '+' : '') + g).join(' ');
+  }
+  return '';
+}
+function foldRefresh() {
+  document.querySelectorAll('.fold').forEach(el => {
+    const sum = el.querySelector(':scope .fold-sum'); if (sum) sum.textContent = foldSummaryText(el.dataset.fold);
+  });
+}
+function foldInit() {
+  const st = foldState();
+  document.querySelectorAll('.fold').forEach(el => {
+    const head = el.querySelector(':scope > ' + el.dataset.foldHead) || el.querySelector(el.dataset.foldHead);
+    if (!head) return;
+    const body = document.createElement('div'); body.className = 'fold-body';
+    let n = head.nextSibling; while (n) { const nx = n.nextSibling; body.append(n); n = nx; }
+    head.after(body);
+    head.classList.add('fold-head');
+    const chev = document.createElement('span'); chev.className = 'fold-chev';
+    const sum = document.createElement('span'); sum.className = 'fold-sum';
+    head.prepend(chev);
+    const title = head.querySelector('.card-title, .eq-title');
+    (title || chev).after(sum);
+    const closed = st[el.dataset.fold] !== undefined ? st[el.dataset.fold] : true;
+    el.classList.toggle('closed', !!closed);
+    head.addEventListener('click', e => {
+      if (e.target.closest('button, input, select, label, a')) return;
+      el.classList.toggle('closed');
+      const s2 = foldState(); s2[el.dataset.fold] = el.classList.contains('closed');
+      try { localStorage.setItem(FOLD_LS, JSON.stringify(s2)); } catch {}
+    });
+  });
+  foldRefresh();
+  document.addEventListener('input', foldRefresh);
+  document.addEventListener('change', foldRefresh);
+  setInterval(foldRefresh, 2000);
+}
 document.addEventListener('DOMContentLoaded', () => {
   eqInitUi();
+  foldInit();
   document.getElementById('audioPlayer').addEventListener('play', eqEnsureGraph);
   document.getElementById('textInput').addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); speak(); }
