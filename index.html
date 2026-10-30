@@ -495,18 +495,18 @@
   .eq-switch { display:flex; align-items:center; gap:.35rem; font-size:.8rem; color:var(--text-muted); cursor:pointer; }
   .eq-preset, .eq-reset { width:auto; background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:.3rem .6rem; font-size:.8rem; font-family:inherit; cursor:pointer; }
   .eq-reset:hover, .eq-preset:hover { border-color:var(--accent); }
-  .eq-stage { position:relative; height:190px; border:1px solid var(--border); border-radius:12px; background:var(--bg); overflow:hidden; }
+  .eq-stage { position:relative; height:120px; border:1px solid var(--border); border-radius:12px; background:var(--bg); overflow:hidden; }
   .eq-stage canvas { position:absolute; inset:0; width:100%; height:100%; opacity:.9; }
   .eq-bands { position:absolute; inset:0; display:grid; grid-template-columns:repeat(5,1fr); padding:.5rem .4rem .4rem; }
   .eq-band { display:flex; flex-direction:column; align-items:center; min-width:0; }
   .eq-band input[type=range] { writing-mode:vertical-lr; direction:rtl; width:22px; flex:1; margin:0; accent-color:var(--accent); background:transparent; }
-  .eq-band .hz { font-size:.68rem; color:var(--text-muted); font-family:monospace; margin-top:.2rem; }
+  .eq-band .hz { font-size:.64rem; color:var(--text-muted); font-family:monospace; margin-top:.2rem; }
   .eq-band .db { font-size:.68rem; color:var(--text); font-family:monospace; height:1em; }
   .eq.off .eq-bands { opacity:.35; }
   .eq-note { font-size:.7rem; color:var(--text-muted); margin:.5rem 0 .2rem; }
   .dl-btn { margin-top:.6rem; display:inline-block; }
 
-  .player-area { display: none; }
+  .player-area { display: block; }
   .player-area.visible { display: block; animation: fadeUp 0.4s ease both; }
 
   .waveform-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
@@ -1208,7 +1208,7 @@
       </div>
       <audio id="audioPlayer" controls></audio>
 
-      <div class="eq fold" id="eq" data-fold="eq" data-fold-head=".eq-head">
+      <div class="eq" id="eq">
         <div class="eq-head">
           <div class="eq-title">イコライザー</div>
           <label class="eq-switch"><input type="checkbox" id="eqOn" checked> <span>有効</span></label>
