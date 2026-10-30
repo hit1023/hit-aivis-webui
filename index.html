@@ -1626,7 +1626,7 @@
         <button class="btn-ghost" onclick="backendsLoad()" title="再読み込み">🔄</button>
       </div>
       <p style="color:var(--text-muted);font-size:.85em;margin-top:.6em">
-        社内ネットワーク（プライベートIP）のサーバーのみ登録できます。追加時は接続確認に成功した場合だけ登録されます。最後の1台は削除できません。
+        社内ネットワーク（プライベートIP）のサーバーのみ登録できます。追加時は接続とモデル（話者）の揃い具合を確認し、足りなければ登録されません（モデルのコピーは自動ではしないので、先にエンジンのデータフォルダをコピーしてください）。辞書は最初の台から自動でコピーされます。最後の1台は削除できません。
       </p>
     </div>
   </div><!-- /page-backends -->
@@ -2011,7 +2011,8 @@ async function backendsAdd() {
     const data = await backendsApi('POST', '/backends', { url });
     document.getElementById('backendsNewUrl').value = '';
     backendsRender(data);
-    backendsSay(`✅ 追加しました（計 ${data.backends.length} 台）`, 'ok');
+    const n = data.added ? data.added.synced_words : 0;
+    backendsSay(`✅ 追加しました（計 ${data.backends.length} 台、辞書 ${n} 語をコピー）`, 'ok');
   } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
 }
 
