@@ -2769,8 +2769,20 @@ async function speak() {
   btn.querySelector('.btn-text').textContent = '生成中...';
   document.getElementById('ttsStatus').className = 'status';
 
+  const t0 = performance.now();
+  // 数秒を超えたら、遅い理由の目安を出す（冷えた台はモデルの読み込みで時間がかかる）
+  const slowTimer = setInterval(() => {
+    const sec = Math.floor((performance.now() - t0) / 1000);
+    if (sec >= 6) {
+      const el = document.getElementById('ttsStatus');
+      el.textContent = `生成に時間がかかっています（${sec} 秒）。モデルを読み込み中の可能性があります。そのままお待ちください。`;
+      el.className = 'status';
+      el.style.display = 'block';
+      el.style.color = 'var(--text-muted)';
+    }
+  }, 1000);
+
   try {
-    const t0 = performance.now();
     const res = await apiFetch(`/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2807,6 +2819,9 @@ async function speak() {
   } catch(e) {
     showTtsStatus(`エラー: ${e.message}`, 'error');
   } finally {
+    clearInterval(slowTimer);
+    document.getElementById('ttsStatus').style.color = '';
+    document.getElementById('ttsStatus').style.display = '';
     btn.disabled = false;
     btn.classList.remove('loading');
     btn.querySelector('.btn-text').textContent = '音声を生成';
