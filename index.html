@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AivisSpeech Studio</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234f8eff'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='12' y='5' width='8' height='13' rx='4' fill='white'/%3E%3Cpath d='M8 15 Q8 23 16 23 Q24 23 24 15' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cline x1='16' y1='23' x2='16' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3Cline x1='11' y1='27' x2='21' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #080b14;
@@ -53,32 +53,62 @@
   /* Header */
   header { margin-bottom: 2rem; animation: fadeDown 0.6s ease both; }
 
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    margin-bottom: 0.5rem;
-  }
+  .logo { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.7rem; }
 
+  /* 波形マーク：ガラス質の角丸＋グラデの縁、中の5本が呼吸するように動く */
   .logo-icon {
-    width: 40px; height: 40px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem;
+    position: relative;
+    width: 52px; height: 52px; flex: none;
+    border-radius: 15px;
+    background:
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      linear-gradient(135deg, var(--accent), var(--accent2)) border-box;
+    border: 1.5px solid transparent;
+    display: flex; align-items: center; justify-content: center; gap: 3.5px;
+    box-shadow: 0 0 22px rgba(124,92,255,.28), inset 0 0 14px rgba(79,140,255,.12);
   }
+  .logo-icon i {
+    width: 3.5px; border-radius: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--accent2));
+    height: 14px; transform-origin: center;
+    animation: wave 1.6s ease-in-out infinite;
+  }
+  .logo-icon i:nth-child(1) { height: 12px; animation-delay: -.0s; }
+  .logo-icon i:nth-child(2) { height: 24px; animation-delay: -.25s; }
+  .logo-icon i:nth-child(3) { height: 32px; animation-delay: -.5s; }
+  .logo-icon i:nth-child(4) { height: 20px; animation-delay: -.75s; }
+  .logo-icon i:nth-child(5) { height: 10px; animation-delay: -1s; }
+  @keyframes wave { 0%,100% { transform: scaleY(.45); } 50% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { .logo-icon i { animation: none; } }
 
   h1 {
     font-family: 'Syne', sans-serif;
-    font-size: 1.8rem;
+    font-size: 2rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    line-height: 1;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    display: flex; align-items: baseline; gap: .55em;
   }
+  h1 .w1 {
+    background: linear-gradient(100deg, var(--accent), var(--accent2) 70%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    filter: drop-shadow(0 0 14px rgba(124,92,255,.35));
+  }
+  h1 .w2 { font-weight: 400; color: var(--text); letter-spacing: .32em; font-size: .62em; opacity: .85; }
 
-  .subtitle { color: var(--text-muted); font-size: 0.85rem; font-weight: 300; }
+  .sub-row { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+  .status-pill {
+    font-family: 'JetBrains Mono', monospace; font-size: .68rem; letter-spacing: .06em;
+    color: var(--text-muted); border: 1px solid var(--border); border-radius: 99px;
+    padding: .18rem .7rem; display: inline-flex; align-items: center; gap: .45rem; text-transform: uppercase;
+  }
+  .status-pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
+  .status-pill.ok i { background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
+  .status-pill.ok { color: var(--text); }
+  .status-pill.ng i { background: var(--error); box-shadow: 0 0 8px var(--error); }
+
+  .subtitle { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: .08em; }
 
   /* Tab Navigation */
   .tab-nav {
@@ -1076,10 +1106,13 @@
 <div class="container">
   <header>
     <div class="logo">
-      <div class="logo-icon">🎙</div>
-      <h1>AivisSpeech Studio</h1>
+      <div class="logo-icon" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <h1><span class="w1">Aivis</span><span class="w2">Studio</span></h1>
     </div>
-    <p class="subtitle">Text-to-Speech powered by AivisSpeech Engine</p>
+    <div class="sub-row">
+      <span class="subtitle">TEXT-TO-SPEECH · POWERED BY AIVISSPEECH ENGINE</span>
+      <span class="status-pill" id="hdrStatus"><i></i><span>CONNECTING</span></span>
+    </div>
   </header>
 
   <nav class="tab-nav">
@@ -1974,6 +2007,28 @@ async function bkRefresh() {
     document.getElementById('bkFoot').textContent = `状況を取得できません: ${e.message}`;
   }
 }
+
+// ヘッダーの稼働状況（認証不要の /backends/status）
+async function hdrStatusRefresh() {
+  const el = document.getElementById('hdrStatus');
+  if (!el) return;
+  try {
+    const res = await apiFetch('/backends/status');
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+    const act = d.backends.filter(b => (b.state || 'active') === 'active');
+    const up = act.filter(b => b.ok).length;
+    const syncN = d.backends.filter(b => b.state === 'syncing').length;
+    el.className = 'status-pill ' + (up === act.length ? 'ok' : 'ng');
+    el.lastChild.textContent = d.provider === 'aivis_cloud' ? 'AIVIS CLOUD'
+      : `${up}/${act.length} ENGINES ONLINE` + (syncN ? ` · ${syncN} SYNCING` : '');
+  } catch {
+    el.className = 'status-pill ng';
+    el.lastChild.textContent = 'OFFLINE';
+  }
+}
+hdrStatusRefresh();
+setInterval(hdrStatusRefresh, 30000);
 
 function backendsInit() {
   document.getElementById('backendsAdminToken').value = getAdminToken();
