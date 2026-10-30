@@ -1056,6 +1056,7 @@
     <button class="tab-btn" onclick="switchTab('history')">📜 履歴</button>
     <button class="tab-btn" onclick="switchTab('kana')">🔤 読みチェック</button>
     <button class="tab-btn" onclick="switchTab('reader')">▶ 順次読み上げ</button>
+    <button class="tab-btn" onclick="switchTab('backends')">🖥 バックエンド</button>
     <button class="tab-btn" onclick="switchTab('settings')" style="margin-left:auto">⚙️ 設定</button>
   </nav>
 
@@ -1566,6 +1567,37 @@
   <!-- ============================
        ⚙️ 設定
        ============================ -->
+  <div class="page" id="page-backends">
+    <div class="card">
+      <div class="card-title">🖥 バックエンド（AivisSpeech Engine の台）</div>
+      <p style="color:var(--text-dim);font-size:.9em;margin-bottom:1em">
+        ルーターがラウンドロビンで振り分ける台の一覧です。追加・削除は再起動なしで反映され、
+        ルーターの <code>/data/backends.json</code> に保存されます（保存後は <code>.env</code> の AIVIS_BACKEND_URLS より優先されます）。
+      </p>
+
+      <label class="label" for="backendsAdminToken">管理トークン</label>
+      <div style="display:flex;gap:.5em;margin-bottom:.4em">
+        <input class="input" id="backendsAdminToken" type="password" placeholder="ルーターの ADMIN_TOKEN" style="flex:1" autocomplete="off">
+        <button class="btn-ghost" onclick="backendsSaveToken()">💾 保存</button>
+      </div>
+      <p style="color:var(--text-dim);font-size:.85em;margin-bottom:1.4em">ブラウザにのみ保存されます。</p>
+
+      <div id="backendsMsg" style="font-size:.9em;margin-bottom:.8em;min-height:1.2em"></div>
+      <div id="backendsList" style="display:flex;flex-direction:column;gap:.5em;margin-bottom:1.4em"></div>
+
+      <label class="label" for="backendsNewUrl">台を追加</label>
+      <div style="display:flex;gap:.5em;flex-wrap:wrap">
+        <input class="input" id="backendsNewUrl" type="url" placeholder="http://192.168.0.22:10101" style="flex:1;min-width:16em">
+        <button class="btn-ghost" onclick="backendsTest()">🔍 接続テスト</button>
+        <button class="btn-primary" onclick="backendsAdd()">➕ 追加</button>
+        <button class="btn-ghost" onclick="backendsLoad()" title="再読み込み">🔄</button>
+      </div>
+      <p style="color:var(--text-dim);font-size:.85em;margin-top:.6em">
+        社内ネットワーク（プライベートIP）のサーバーのみ登録できます。追加時は接続確認に成功した場合だけ登録されます。最後の1台は削除できません。
+      </p>
+    </div>
+  </div><!-- /page-backends -->
+
   <div class="page" id="page-settings">
     <div class="card">
       <div class="card-title">⚙️ 接続設定</div>
@@ -1696,7 +1728,7 @@ function resolveWordTypeLabel(w) {
 // ==========================================
 //  タブ
 // ==========================================
-const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'settings'];
+const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
     b.classList.toggle('active', _TABS[i] === tab);
@@ -1706,7 +1738,130 @@ function switchTab(tab) {
   if (tab === 'dict') loadDict();
   if (tab === 'replacer') loadReplacements();
   if (tab === 'history') loadHistory(1);
+  if (tab === 'backends') backendsInit();
   if (tab === 'settings') settingsInit();
+}
+
+
+// ==========================================
+//  🖥 バックエンドタブ
+// ==========================================
+const _LS_ADMIN_TOKEN = 'aivis_admin_token';
+function getAdminToken() { try { return localStorage.getItem(_LS_ADMIN_TOKEN) || ''; } catch { return ''; } }
+
+function backendsSay(text, kind) {
+  const el = document.getElementById('backendsMsg');
+  el.textContent = text;
+  el.style.color = kind === 'error' ? 'var(--error)' : kind === 'ok' ? 'var(--success)' : 'var(--text-dim)';
+}
+
+async function backendsApi(method, path, body) {
+  const headers = { 'X-Admin-Token': getAdminToken() };
+  if (body) headers['Content-Type'] = 'application/json';
+  const res = await apiFetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  let data = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) {
+    const detail = data && data.detail ? data.detail : `HTTP ${res.status}`;
+    const e = new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+    e.status = res.status;
+    throw e;
+  }
+  return data;
+}
+
+function backendsInit() {
+  document.getElementById('backendsAdminToken').value = getAdminToken();
+  backendsLoad();
+}
+
+function backendsSaveToken() {
+  const v = document.getElementById('backendsAdminToken').value.trim();
+  try { if (v) localStorage.setItem(_LS_ADMIN_TOKEN, v); else localStorage.removeItem(_LS_ADMIN_TOKEN); }
+  catch { backendsSay('localStorage への保存に失敗しました', 'error'); return; }
+  backendsLoad();
+}
+
+function backendsRender(data) {
+  const list = document.getElementById('backendsList');
+  list.replaceChildren();
+  if (!data.editable) {
+    backendsSay('現在は Aivis Cloud を使用中のため、台の編集はできません（TTS_PROVIDER=local のときのみ）。');
+  }
+  const only = data.backends.length <= 1;
+  data.backends.forEach(b => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:.8em;padding:.6em .8em;border:1px solid var(--border);border-radius:8px;flex-wrap:wrap';
+    const dot = document.createElement('span');
+    dot.textContent = b.ok ? '●' : '●';
+    dot.style.color = b.ok ? 'var(--success)' : 'var(--error)';
+    const url = document.createElement('code');
+    url.textContent = b.url;
+    url.style.flex = '1';
+    const info = document.createElement('span');
+    info.style.cssText = 'color:var(--text-dim);font-size:.85em';
+    info.textContent = b.cloud ? 'Aivis Cloud'
+      : b.ok ? `${b.latency_ms} ms ・ モデル ${b.loaded_models} 件ロード中`
+      : `接続できません (${b.error || ''})`;
+    row.append(dot, url, info);
+    if (data.editable) {
+      const del = document.createElement('button');
+      del.className = 'btn-danger';
+      del.textContent = '🗑 削除';
+      del.disabled = only;
+      del.title = only ? '最後の1台は削除できません' : '';
+      del.onclick = () => backendsRemove(b.url);
+      row.append(del);
+    }
+    list.append(row);
+  });
+}
+
+async function backendsLoad() {
+  if (!getAdminToken()) { backendsSay('管理トークンを入力して保存してください。'); document.getElementById('backendsList').replaceChildren(); return; }
+  backendsSay('読み込み中…');
+  try {
+    const data = await backendsApi('GET', '/backends');
+    backendsRender(data);
+    if (data.editable) backendsSay(`${data.backends.length} 台が登録されています。`);
+  } catch (e) {
+    document.getElementById('backendsList').replaceChildren();
+    backendsSay(e.status === 401 ? '管理トークンが正しくありません。'
+      : e.status === 403 ? 'ルーター側で管理機能が無効です（ADMIN_TOKEN が未設定）。'
+      : `取得に失敗しました: ${e.message}`, 'error');
+  }
+}
+
+async function backendsTest() {
+  const url = document.getElementById('backendsNewUrl').value.trim();
+  if (!url) return;
+  backendsSay('接続テスト中…');
+  try {
+    const r = await backendsApi('POST', '/backends/test', { url });
+    if (r.ok) backendsSay(`✅ 接続できました（${r.latency_ms} ms、スピーカー ${r.speakers} 件）`, 'ok');
+    else backendsSay(`❌ 接続できません: ${r.error}`, 'error');
+  } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
+}
+
+async function backendsAdd() {
+  const url = document.getElementById('backendsNewUrl').value.trim();
+  if (!url) return;
+  backendsSay('追加中…（モデル一覧を取得します）');
+  try {
+    const data = await backendsApi('POST', '/backends', { url });
+    document.getElementById('backendsNewUrl').value = '';
+    backendsRender(data);
+    backendsSay(`✅ 追加しました（計 ${data.backends.length} 台）`, 'ok');
+  } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
+}
+
+async function backendsRemove(url) {
+  if (!confirm(`${url} を一覧から外しますか？\n（台そのものは停止しません）`)) return;
+  try {
+    const data = await backendsApi('DELETE', '/backends?url=' + encodeURIComponent(url));
+    backendsRender(data);
+    backendsSay(`🗑 削除しました（計 ${data.backends.length} 台）`, 'ok');
+  } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
 }
 
 // ==========================================
