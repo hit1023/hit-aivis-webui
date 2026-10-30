@@ -86,11 +86,8 @@
     gap: 0.4rem;
     margin-bottom: 1.8rem;
     border-bottom: 1px solid var(--border);
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
+    flex-wrap: wrap;   /* 横スクロールだと右端のタブが見えなくなるので折り返す */
   }
-  .tab-nav::-webkit-scrollbar { display: none; }
 
   .tab-btn {
     background: none;
@@ -100,7 +97,7 @@
     font-family: 'Syne', sans-serif;
     font-size: 0.85rem;
     font-weight: 600;
-    padding: 0.6rem 1.2rem;
+    padding: 0.6rem 0.95rem;
     cursor: pointer;
     transition: color 0.2s, border-color 0.2s;
     margin-bottom: -1px;
@@ -560,6 +557,13 @@
   .vram-badge.on { background: rgba(34,211,160,0.12); color: var(--success); border: 1px solid rgba(34,211,160,0.3); }
   .vram-badge.off { background: rgba(90,106,138,0.12); color: var(--text-muted); border: 1px solid var(--border); }
 
+  .vram-badge.part { background: rgba(245,185,74,0.12); color: #f5b94a; border: 1px solid rgba(245,185,74,0.3); }
+  .vram-badge.part .badge-dot { background: #f5b94a; }
+  .model-engines { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.1rem; }
+  .engine-chip { font-size: 0.68rem; font-family: monospace; color: var(--text-muted); border: 1px solid var(--border); border-radius: 99px; padding: 0.08rem 0.5rem; display: inline-flex; align-items: center; gap: 0.3rem; }
+  .engine-chip i { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
+  .engine-chip.on { color: var(--text); }
+  .engine-chip.on i { background: var(--success); box-shadow: 0 0 5px var(--success); }
   .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
   .vram-badge.on .badge-dot { background: var(--success); box-shadow: 0 0 6px var(--success); animation: pulse 2s infinite; }
   .vram-badge.off .badge-dot { background: var(--text-muted); }
@@ -2452,6 +2456,7 @@ async function speak() {
   document.getElementById('ttsStatus').className = 'status';
 
   try {
+    const t0 = performance.now();
     const res = await apiFetch(`/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2482,7 +2487,9 @@ async function speak() {
     audio.onended = () => bars.forEach(b => b.classList.remove('playing'));
 
     fetchAndRenderAccent(text, speakerId);
-    showTtsStatus('✓ 生成完了', 'success');
+    const served = res.headers.get('X-Backend');   // どの台が応答したか
+    const sec = ((performance.now() - t0) / 1000).toFixed(1);
+    showTtsStatus(`✓ 生成完了（${served ? '応答: ' + served.replace(/^https?:\/\//, '') + ' ・ ' : ''}${sec} 秒）`, 'success');
   } catch(e) {
     showTtsStatus(`エラー: ${e.message}`, 'error');
   } finally {
@@ -2558,35 +2565,41 @@ async function loadModels() {
     const list = document.getElementById('modelList');
     if (!models.length) { list.innerHTML = '<div class="vram-empty">モデルが見つかりません</div>'; return; }
 
-    // 同一モデルが複数バックエンドに存在する場合は1件だけ表示（IDは共通なので）
-    const seen = new Set();
-    const uniqueModels = models.filter(m => {
-      if (seen.has(m.aivm_uuid)) return false;
-      seen.add(m.aivm_uuid);
-      return true;
-    });
+    // 同じモデルは1枚にまとめ、どの台でロード中かを台ごとに示す
+    const groups = new Map();
+    for (const m of models) {
+      if (!groups.has(m.aivm_uuid)) groups.set(m.aivm_uuid, { m, engines: [] });
+      groups.get(m.aivm_uuid).engines.push({ url: m.backend_url, loaded: m.is_loaded });
+    }
+    const short = u => u.replace(/^https?:\/\//, '');
 
-    list.innerHTML = uniqueModels.map(m => {
+    list.innerHTML = [...groups.values()].map(({ m, engines }) => {
       const stylesHtml = m.speakers.map(sp => {
         const styles = styleMap[sp.name] || [];
         return styles.map(st =>
           `<div class="style-chip">${sp.name} / ${st.name} &nbsp; <span>ID: ${st.id}</span></div>`
         ).join('');
       }).join('');
+      const on = engines.filter(e => e.loaded).length, n = engines.length;
+      const state = on === 0 ? 'off' : on === n ? 'on' : 'part';
+      const label = on === 0 ? 'アンロード' : on === n ? `VRAM ロード中（${n}台）` : `一部ロード中（${on}/${n}台）`;
+      const chips = engines.map(e =>
+        `<span class="engine-chip ${e.loaded ? 'on' : ''}" title="${e.loaded ? 'ロード中' : 'アンロード'}"><i></i>${short(e.url)}</span>`
+      ).join('');
       return `
-      <div class="model-row ${m.is_loaded ? 'loaded' : ''}">
+      <div class="model-row ${on ? 'loaded' : ''}">
         <div class="model-info">
           <div class="model-name">${m.model_name}</div>
-          <div class="model-backend">${m.backend_url.replace('https://','')}</div>
+          <div class="model-engines">${chips}</div>
           <div class="model-styles">${stylesHtml}</div>
         </div>
         <div class="model-row-right">
-          <div class="vram-badge ${m.is_loaded ? 'on' : 'off'}">
+          <div class="vram-badge ${state}">
             <div class="badge-dot"></div>
-            ${m.is_loaded ? 'VRAM ロード中' : 'アンロード'}
+            ${label}
           </div>
-          ${m.is_loaded ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')">⏏ 解放</button>` : ''}
-          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')">🗑 削除</button>
+          ${on ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')" title="全台のVRAMから解放">⏏ 解放</button>` : ''}
+          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')" title="全台からアンインストール">🗑 削除</button>
         </div>
       </div>`;
     }).join('');
@@ -3703,6 +3716,7 @@ async function loadHistory(page) {
           <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:0.4rem;">
             <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">${dateStr}</span>
             <span style="font-size:0.8rem;color:var(--accent);font-weight:600;flex:1;">${esc(voice)}</span>
+            ${item.backend ? `<span title="この音声を生成した台" style="font-size:0.7rem;font-family:monospace;color:var(--text-muted);border:1px solid var(--border);border-radius:99px;padding:0.05rem 0.5rem;white-space:nowrap;">🖥 ${esc(item.backend.replace(/^https?:\/\//, ''))}</span>` : ''}
             <button id="hist-play-${idx}" onclick="histPlay(this,${idx})" style="${_histBtnStyle}">▶ 再生</button>
             <button id="hist-copy-${idx}" onclick="histCopy(this,${idx})" style="${_histBtnStyle}">📋 コピー</button>
           </div>
