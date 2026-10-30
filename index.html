@@ -530,7 +530,7 @@
   }
   .card-title::before, .eq-title::before { content: '//'; color: var(--accent); opacity: .7; margin-right: .5em; letter-spacing: 0; }
   .fold-head > .card-title::before { content: ''; margin: 0; }
-  .tab-btn { font-family: 'JetBrains Mono', monospace; font-size: .74rem; letter-spacing: .06em; }
+  .tab-btn { font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
   .char-count, #lastUpdated, .last-updated, .status { font-family: 'JetBrains Mono', monospace; }
   .param-item label { font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .04em; margin-bottom: .3rem; align-items: baseline; }
   .param-item label span { font-family: 'JetBrains Mono', monospace; font-size: .8rem; }
@@ -1218,14 +1218,14 @@
   </header>
 
   <nav class="tab-nav">
-    <button class="tab-btn active" onclick="switchTab('tts')">音声合成</button>
-    <button class="tab-btn" onclick="switchTab('dict')">単語辞書</button>
-    <button class="tab-btn" onclick="switchTab('replacer')">置換ルール</button>
-    <button class="tab-btn" onclick="switchTab('history')">履歴</button>
-    <button class="tab-btn" onclick="switchTab('kana')">読みチェック</button>
-    <button class="tab-btn" onclick="switchTab('reader')">▶ 順次読み上げ</button>
-    <button class="tab-btn" onclick="switchTab('backends')">バックエンド</button>
-    <button class="tab-btn" onclick="switchTab('settings')" style="margin-left:auto">設定</button>
+    <button class="tab-btn active" onclick="switchTab('tts')">Synthesis</button>
+    <button class="tab-btn" onclick="switchTab('dict')">Dictionary</button>
+    <button class="tab-btn" onclick="switchTab('replacer')">Replace Rules</button>
+    <button class="tab-btn" onclick="switchTab('history')">History</button>
+    <button class="tab-btn" onclick="switchTab('kana')">Reading Check</button>
+    <button class="tab-btn" onclick="switchTab('reader')">Reader</button>
+    <button class="tab-btn" onclick="switchTab('backends')">Backends</button>
+    <button class="tab-btn" onclick="switchTab('settings')" style="margin-left:auto">Settings</button>
   </nav>
 
   <!-- ============================
