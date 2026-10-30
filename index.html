@@ -1925,7 +1925,8 @@ function bkRender(data) {
     const head = bkEl('div', 'bk-head');
     head.append(bkEl('span', 'bk-dot ' + (b.ok ? 'ok' : 'ng')));
     const nm = bkEl('div');
-    nm.append(bkEl('div', 'bk-name', b.cloud ? 'Aivis Cloud' : `台 ${b.index}`));
+    nm.append(bkEl('div', 'bk-name', (b.cloud ? 'Aivis Cloud' : `台 ${b.index}`) + (b.master ? ' 👑' : '')));
+    if (b.master) nm.append(bkEl('div', 'bk-sub', 'マスター（辞書・モデルの基準）'));
     const host = _bkNames[i] ? _bkNames[i].replace(/^https?:\/\//, '') : '';
     if (host) nm.append(bkEl('div', 'bk-sub', host));
     head.append(nm);
@@ -2069,6 +2070,21 @@ function backendsRender(data) {
       : b.ok ? `${b.latency_ms} ms ・ モデル ${b.loaded_models} 件ロード中`
       : `接続できません (${b.error || ''})`;
     row.append(dot, url, info);
+    if (data.editable && !pend && !b.cloud) {
+      if (b.master) {
+        const m = document.createElement('span');
+        m.textContent = '👑 マスター';
+        m.style.cssText = 'color:#f5b94a;font-weight:700;font-size:.85em';
+        row.append(m);
+      } else {
+        const mb = document.createElement('button');
+        mb.className = 'btn-ghost';
+        mb.textContent = '👑 マスターにする';
+        mb.title = 'この台を辞書・モデルの基準にします（他の台へ辞書を反映）';
+        mb.onclick = () => backendsSetMaster(b.url);
+        row.append(mb);
+      }
+    }
     if (data.editable) {
       const del = document.createElement('button');
       del.className = 'btn-danger';
@@ -2080,6 +2096,18 @@ function backendsRender(data) {
     }
     list.append(row);
   });
+}
+
+async function backendsSetMaster(url) {
+  if (!confirm(`${url.replace(/^https?:\/\//, '')} をマスターにします。\n他の台の辞書をマスターに合わせて更新します。よろしいですか？`)) return;
+  backendsSay('マスターを切り替え中…');
+  try {
+    const r = await backendsApi('PUT', '/backends/master', { url });
+    backendsRender(r);
+    const failed = (r.dict && r.dict.failed) || [];
+    backendsSay(failed.length ? `👑 マスターを切り替えました（辞書の反映に失敗: ${failed.length} 台）` : '👑 マスターを切り替えました', failed.length ? 'error' : 'ok');
+    bkRefresh();
+  } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
 }
 
 async function backendsLoad(silent) {
