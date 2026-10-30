@@ -117,6 +117,32 @@
   .page.active { display: block; }
 
   /* Card */
+  /* 🖥 バックエンド稼働状況 */
+  .bk-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:.7rem; margin-bottom:1.1rem; }
+  .bk-tile { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.8rem 1rem; }
+  .bk-tile .v { font-size:1.7rem; font-weight:700; line-height:1.2; }
+  .bk-tile .l { font-size:.75rem; color:var(--text-muted); margin-top:.15rem; }
+  .bk-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:.9rem; }
+  .bk-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.7rem; }
+  .bk-card.down { border-color:var(--error); }
+  .bk-head { display:flex; align-items:center; gap:.5rem; }
+  .bk-dot { width:.7rem; height:.7rem; border-radius:50%; flex:none; }
+  .bk-dot.ok { background:var(--success); box-shadow:0 0 8px var(--success); }
+  .bk-dot.ng { background:var(--error); box-shadow:0 0 8px var(--error); }
+  .bk-name { font-weight:700; }
+  .bk-sub { color:var(--text-muted); font-size:.75rem; font-family:monospace; }
+  .bk-badge { margin-left:auto; font-size:.72rem; padding:.1rem .5rem; border-radius:99px; border:1px solid currentColor; }
+  .bk-row { display:flex; justify-content:space-between; font-size:.78rem; color:var(--text-muted); margin-bottom:.25rem; }
+  .bk-row b { color:var(--text); font-weight:600; }
+  .bk-bar { height:7px; background:var(--bg); border-radius:99px; overflow:hidden; }
+  .bk-bar > i { display:block; height:100%; border-radius:99px; transition:width .5s; }
+  .bk-spark { display:flex; align-items:flex-end; gap:2px; height:34px; }
+  .bk-spark > i { flex:1; min-width:3px; background:var(--accent); border-radius:2px 2px 0 0; opacity:.85; }
+  .bk-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem; text-align:center; }
+  .bk-stats div { background:var(--bg); border-radius:8px; padding:.4rem .2rem; }
+  .bk-stats b { display:block; font-size:1.05rem; }
+  .bk-stats span { font-size:.68rem; color:var(--text-muted); }
+
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -1569,10 +1595,17 @@
        ============================ -->
   <div class="page" id="page-backends">
     <div class="card">
-      <div class="card-title">🖥 バックエンド（AivisSpeech Engine の台）</div>
-      <p style="color:var(--text-dim);font-size:.9em;margin-bottom:1em">
-        ルーターがラウンドロビンで振り分ける台の一覧です。追加・削除は再起動なしで反映され、
-        ルーターの <code>/data/backends.json</code> に保存されます（保存後は <code>.env</code> の AIVIS_BACKEND_URLS より優先されます）。
+      <div class="card-title">🖥 バックエンド稼働状況</div>
+      <div id="bkSummary" class="bk-summary"></div>
+      <div id="bkGrid" class="bk-grid"></div>
+      <p id="bkFoot" style="color:var(--text-muted);font-size:.8em;margin-top:1em">読み込み中…</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙ 台の管理（追加・削除）</div>
+      <p style="color:var(--text-muted);font-size:.9em;margin-bottom:1em">
+        追加・削除は再起動なしで反映され、ルーターの <code>/data/backends.json</code> に保存されます（保存後は <code>.env</code> の AIVIS_BACKEND_URLS より優先されます）。
+        上の稼働状況は管理トークンなしで見られます。
       </p>
 
       <label class="label" for="backendsAdminToken">管理トークン</label>
@@ -1580,7 +1613,7 @@
         <input class="input" id="backendsAdminToken" type="password" placeholder="ルーターの ADMIN_TOKEN" style="flex:1" autocomplete="off">
         <button class="btn-ghost" onclick="backendsSaveToken()">💾 保存</button>
       </div>
-      <p style="color:var(--text-dim);font-size:.85em;margin-bottom:1.4em">ブラウザにのみ保存されます。</p>
+      <p style="color:var(--text-muted);font-size:.85em;margin-bottom:1.4em">ブラウザにのみ保存されます。</p>
 
       <div id="backendsMsg" style="font-size:.9em;margin-bottom:.8em;min-height:1.2em"></div>
       <div id="backendsList" style="display:flex;flex-direction:column;gap:.5em;margin-bottom:1.4em"></div>
@@ -1592,7 +1625,7 @@
         <button class="btn-primary" onclick="backendsAdd()">➕ 追加</button>
         <button class="btn-ghost" onclick="backendsLoad()" title="再読み込み">🔄</button>
       </div>
-      <p style="color:var(--text-dim);font-size:.85em;margin-top:.6em">
+      <p style="color:var(--text-muted);font-size:.85em;margin-top:.6em">
         社内ネットワーク（プライベートIP）のサーバーのみ登録できます。追加時は接続確認に成功した場合だけ登録されます。最後の1台は削除できません。
       </p>
     </div>
@@ -1739,6 +1772,7 @@ function switchTab(tab) {
   if (tab === 'replacer') loadReplacements();
   if (tab === 'history') loadHistory(1);
   if (tab === 'backends') backendsInit();
+  if (tab !== 'backends') bkStop();
   if (tab === 'settings') settingsInit();
 }
 
@@ -1752,7 +1786,7 @@ function getAdminToken() { try { return localStorage.getItem(_LS_ADMIN_TOKEN) ||
 function backendsSay(text, kind) {
   const el = document.getElementById('backendsMsg');
   el.textContent = text;
-  el.style.color = kind === 'error' ? 'var(--error)' : kind === 'ok' ? 'var(--success)' : 'var(--text-dim)';
+  el.style.color = kind === 'error' ? 'var(--error)' : kind === 'ok' ? 'var(--success)' : 'var(--text-muted)';
 }
 
 async function backendsApi(method, path, body) {
@@ -1770,9 +1804,134 @@ async function backendsApi(method, path, body) {
   return data;
 }
 
+// ---- 稼働状況ダッシュボード（認証不要の /backends/status を5秒ごとに取得） ----
+let _bkTimer = null;
+let _bkNames = [];   // 管理トークンで取得できた台のURL（台番号→ホスト表示に使う）
+
+function bkStop() { if (_bkTimer) { clearInterval(_bkTimer); _bkTimer = null; } }
+function bkStart() { bkStop(); bkRefresh(); _bkTimer = setInterval(bkRefresh, 5000); }
+
+function bkEl(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function bkAgo(epoch) {
+  if (!epoch) return 'まだ使われていません';
+  const s = Math.max(0, Math.round(Date.now() / 1000 - epoch));
+  if (s < 60) return `${s} 秒前`;
+  if (s < 3600) return `${Math.floor(s / 60)} 分前`;
+  if (s < 86400) return `${Math.floor(s / 3600)} 時間前`;
+  return `${Math.floor(s / 86400)} 日前`;
+}
+function bkLatencyColor(ms) { return ms < 50 ? 'var(--success)' : ms < 150 ? '#f5b94a' : 'var(--error)'; }
+
+function bkRender(data) {
+  const list = data.backends;
+  const upN = list.filter(b => b.ok).length;
+  const total = list.reduce((n, b) => n + (b.requests || 0), 0);
+  const errs = list.reduce((n, b) => n + (b.errors || 0), 0);
+  const recent = list.flatMap(b => b.recent_ms || []);
+  const avg = recent.length ? Math.round(recent.reduce((a, c) => a + c, 0) / recent.length) : null;
+
+  const sum = document.getElementById('bkSummary');
+  sum.replaceChildren();
+  [[`${upN} / ${list.length}`, '稼働中の台', upN === list.length ? 'var(--success)' : 'var(--error)'],
+   [total, '処理した件数', null],
+   [avg === null ? '—' : `${(avg / 1000).toFixed(1)} 秒`, '平均の合成時間（直近）', null],
+   [errs, 'エラー', errs ? 'var(--error)' : null]].forEach(([v, l, c]) => {
+    const t = bkEl('div', 'bk-tile');
+    const vv = bkEl('div', 'v', String(v));
+    if (c) vv.style.color = c;
+    t.append(vv, bkEl('div', 'l', l));
+    sum.append(t);
+  });
+
+  const grid = document.getElementById('bkGrid');
+  grid.replaceChildren();
+  list.forEach((b, i) => {
+    const card = bkEl('div', 'bk-card' + (b.ok ? '' : ' down'));
+    const head = bkEl('div', 'bk-head');
+    head.append(bkEl('span', 'bk-dot ' + (b.ok ? 'ok' : 'ng')));
+    const nm = bkEl('div');
+    nm.append(bkEl('div', 'bk-name', b.cloud ? 'Aivis Cloud' : `台 ${b.index}`));
+    const host = _bkNames[i] ? _bkNames[i].replace(/^https?:\/\//, '') : '';
+    if (host) nm.append(bkEl('div', 'bk-sub', host));
+    head.append(nm);
+    const badge = bkEl('span', 'bk-badge', b.ok ? '稼働中' : '応答なし');
+    badge.style.color = b.ok ? 'var(--success)' : 'var(--error)';
+    head.append(badge);
+    card.append(head);
+    if (b.cloud) { grid.append(card); return; }
+
+    // 応答時間バー
+    const lat = bkEl('div');
+    const lr = bkEl('div', 'bk-row');
+    lr.append(bkEl('span', '', '応答時間'));
+    lr.append(bkEl('b', '', b.ok ? `${b.latency_ms} ms` : '—'));
+    const bar = bkEl('div', 'bk-bar'); const fill = bkEl('i');
+    const ms = b.ok ? b.latency_ms : 0;
+    fill.style.width = Math.min(100, Math.max(3, ms / 2)) + '%';
+    fill.style.background = bkLatencyColor(ms);
+    bar.append(fill); lat.append(lr, bar); card.append(lat);
+
+    // 処理シェア
+    const sh = bkEl('div');
+    const pct = total ? Math.round((b.requests || 0) * 100 / total) : 0;
+    const sr = bkEl('div', 'bk-row');
+    sr.append(bkEl('span', '', '処理の割合'), bkEl('b', '', `${pct} %`));
+    const sbar = bkEl('div', 'bk-bar'); const sfill = bkEl('i');
+    sfill.style.width = pct + '%'; sfill.style.background = 'var(--accent)';
+    sbar.append(sfill); sh.append(sr, sbar); card.append(sh);
+
+    // 合成時間の推移（直近20件）
+    const rec = b.recent_ms || [];
+    const sp = bkEl('div');
+    const spr = bkEl('div', 'bk-row');
+    spr.append(bkEl('span', '', '直近の合成時間'),
+               bkEl('b', '', b.avg_ms == null ? '—' : `平均 ${(b.avg_ms / 1000).toFixed(1)} 秒`));
+    const spark = bkEl('div', 'bk-spark');
+    if (rec.length) {
+      const mx = Math.max(...rec, 1);
+      rec.forEach(v => {
+        const bar2 = bkEl('i'); bar2.style.height = Math.max(6, v / mx * 100) + '%';
+        bar2.title = `${v} ms`; spark.append(bar2);
+      });
+    } else {
+      spark.append(bkEl('span', 'bk-sub', 'データなし'));
+    }
+    sp.append(spr, spark); card.append(sp);
+
+    // 数値
+    const st = bkEl('div', 'bk-stats');
+    [[b.loaded_models ?? 0, 'ロード中モデル'], [b.requests || 0, '処理件数'], [b.errors || 0, 'エラー']].forEach(([v, l], k) => {
+      const d = bkEl('div'); const bb = bkEl('b', '', String(v));
+      if (k === 2 && v) bb.style.color = 'var(--error)';
+      d.append(bb, bkEl('span', '', l)); st.append(d);
+    });
+    card.append(st);
+    card.append(bkEl('div', 'bk-sub', `最後に使われた: ${bkAgo(b.last_used)}`));
+    grid.append(card);
+  });
+  document.getElementById('bkFoot').textContent =
+    `5秒ごとに自動更新 ・ 最終更新 ${new Date().toLocaleTimeString('ja-JP')} ・ 処理件数などは再起動でリセットされます`;
+}
+
+async function bkRefresh() {
+  try {
+    const res = await apiFetch('/backends/status');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    bkRender(await res.json());
+  } catch (e) {
+    document.getElementById('bkFoot').textContent = `状況を取得できません: ${e.message}`;
+  }
+}
+
 function backendsInit() {
   document.getElementById('backendsAdminToken').value = getAdminToken();
   backendsLoad();
+  bkStart();
 }
 
 function backendsSaveToken() {
@@ -1783,6 +1942,7 @@ function backendsSaveToken() {
 }
 
 function backendsRender(data) {
+  _bkNames = data.backends.map(b => b.url);
   const list = document.getElementById('backendsList');
   list.replaceChildren();
   if (!data.editable) {
@@ -1799,7 +1959,7 @@ function backendsRender(data) {
     url.textContent = b.url;
     url.style.flex = '1';
     const info = document.createElement('span');
-    info.style.cssText = 'color:var(--text-dim);font-size:.85em';
+    info.style.cssText = 'color:var(--text-muted);font-size:.85em';
     info.textContent = b.cloud ? 'Aivis Cloud'
       : b.ok ? `${b.latency_ms} ms ・ モデル ${b.loaded_models} 件ロード中`
       : `接続できません (${b.error || ''})`;
