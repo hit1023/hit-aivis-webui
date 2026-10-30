@@ -1252,7 +1252,7 @@
         <div class="char-count"><span id="charCount">0</span> / 500</div>
         <span class="speak-hint">Ctrl / &#8984; + Enter</span>
         <button class="btn-speak" id="speakBtn" onclick="speak()">
-          <span class="btn-text">音声を生成</span>
+          <span class="btn-text">Generate</span>
         </button>
       </div>
       <div class="status" id="ttsStatus"></div>
@@ -2493,7 +2493,7 @@ function updatePresetBar() {
     badge.innerHTML = '';
     // アクションバー：新規保存
     bar.innerHTML =
-      `<button class="preset-save-btn" id="presetSaveBtn" onclick="savePreset()">現在のパラメータをプリセット保存</button>`;
+      `<button class="preset-save-btn" id="presetSaveBtn" onclick="savePreset()">Save as Preset</button>`;
   }
 }
 
@@ -2635,7 +2635,7 @@ async function savePreset() {
     updatePresetBar();
     showTtsStatus('✓ プリセットを保存しました', 'success');
   } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = '現在のパラメータをプリセット保存'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Save as Preset'; }
     showTtsStatus('プリセットの保存に失敗しました', 'error');
   }
 }
@@ -2928,7 +2928,7 @@ async function speak() {
 
   btn.disabled = true;
   btn.classList.add('loading');
-  btn.querySelector('.btn-text').textContent = '生成中...';
+  btn.querySelector('.btn-text').textContent = 'Generating...';
   document.getElementById('ttsStatus').className = 'status';
 
   const t0 = performance.now();
@@ -2986,7 +2986,7 @@ async function speak() {
     document.getElementById('ttsStatus').style.display = '';
     btn.disabled = false;
     btn.classList.remove('loading');
-    btn.querySelector('.btn-text').textContent = '音声を生成';
+    btn.querySelector('.btn-text').textContent = 'Generate';
   }
 }
 
@@ -3074,7 +3074,7 @@ async function loadModels() {
       }).join('');
       const on = engines.filter(e => e.loaded).length, n = engines.length;
       const state = on === 0 ? 'off' : on === n ? 'on' : 'part';
-      const label = on === 0 ? 'アンロード' : on === n ? `VRAM ロード中（${n}ノード）` : `一部ロード中（${on}/${n}ノード）`;
+      const label = on === 0 ? 'Unloaded' : on === n ? `VRAM LOADED (${n} nodes)` : `PARTIAL (${on}/${n} nodes)`;
       const chips = engines.map(e =>
         `<span class="engine-chip ${e.loaded ? 'on' : ''}" title="${e.loaded ? 'ロード中' : 'アンロード'}"><i></i>${short(e.url)}</span>`
       ).join('');
@@ -3090,8 +3090,8 @@ async function loadModels() {
             <div class="badge-dot"></div>
             ${label}
           </div>
-          ${on ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')" title="全ノードのVRAMから解放">解放</button>` : ''}
-          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')" title="全ノードからアンインストール">削除</button>
+          ${on ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')" title="全ノードのVRAMから解放">Unload</button>` : ''}
+          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')" title="全ノードからアンインストール">Uninstall</button>
         </div>
       </div>`;
     }).join('');
@@ -3184,7 +3184,7 @@ async function unloadModel(uuid, name) {
   const btn = document.getElementById(`unload-${uuid}`);
   if (!btn) return;
   btn.disabled = true;
-  btn.textContent = '解放中...';
+  btn.textContent = 'Unloading...';
   try {
     const res = await apiFetch(`/models/${uuid}/unload`, { method: 'POST' });
     if (!res.ok) throw new Error('失敗');
@@ -3192,7 +3192,7 @@ async function unloadModel(uuid, name) {
     showTtsStatus(`✓ ${name} をVRAMから解放しました`, 'success');
   } catch(e) {
     btn.disabled = false;
-    btn.textContent = '解放';
+    btn.textContent = 'Unload';
     showTtsStatus(`エラー: ${name} の解放に失敗しました`, 'error');
   }
 }
@@ -3200,7 +3200,7 @@ async function unloadModel(uuid, name) {
 async function uninstallModel(uuid, name) {
   if (!confirm(`「${name}」をアンインストールします。\nこの操作は取り消せません。よろしいですか？`)) return;
   const btn = document.getElementById(`uninst-${uuid}`);
-  if (btn) { btn.disabled = true; btn.textContent = '削除中...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Removing...'; }
   try {
     const res = await apiFetch(`/models/${uuid}/uninstall`, { method: 'DELETE' });
     const json = await res.json();
@@ -3208,7 +3208,7 @@ async function uninstallModel(uuid, name) {
     await loadModels();
     showTtsStatus(`✓ ${name} をアンインストールしました`, 'success');
   } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = '削除'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Uninstall'; }
     showTtsStatus(`エラー: ${e.message}`, 'error');
   }
 }
