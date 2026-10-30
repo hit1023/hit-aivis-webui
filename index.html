@@ -1835,15 +1835,27 @@
         <li><b>外部送信</b>: 判定対象の<u>単語のみ</u>がLLMに送られます（本文全体は送りません）。クラウドLLMを指定すると、その事業者に単語が渡ります。</li>
         <li><b>コスト</b>: クラウドLLMは従量課金です。件数が多い読みチェックでは使用量に注意してください。</li>
         <li><b>精度</b>: LLMの読みも誤ることがあります。<u>参考判定</u>として使い、最終判断は耳で確認してください。小さいモデルほど固有名詞に弱くなります。</li>
-        <li><b>キーの保管</b>: APIキーはルーター側（<code>/data/llm_config.json</code>、権限600）に保存され、画面には再表示されません。保存には「管理」タブの管理トークンが必要です。</li>
+        <li><b>キーの保管</b>: APIキー／トークンはルーター側（<code>/data/llm_config.json</code>、権限600）に保存され、画面には再表示されません。保存には「管理」タブの管理トークンが必要です。</li>
         <li>辞書・置換で読みを設定済みの単語は、判定の対象外になります。</li>
       </ul>
 
+      <label class="label" for="llmProvider">方式</label>
+      <select class="input" id="llmProvider" onchange="llmProviderChanged()" style="margin-bottom:.6em">
+        <option value="openai">OpenAI互換API（Ollama / OpenAI など）</option>
+        <option value="claude_cli">Claude Code ヘッドレス（サブスク枠を使用）</option>
+      </select>
+      <div id="llmCliNote" style="display:none;color:var(--text-dim);font-size:.85em;line-height:1.7;margin-bottom:1em">
+        ルーター内の <code>claude -p</code> を呼びます。APIキー欄には <code>claude setup-token</code> で発行した <b>OAuthトークン</b> を入れてください（従量課金のAPIキーではなく、Claudeサブスクの利用枠を消費します）。
+        消費を抑える工夫: 軽量モデル(haiku)・ツール/MCP/スキルを全て無効化・最小のシステムプロンプト・<b>同じ単語は結果をキャッシュして再問い合わせしない</b>・単語は1回の呼び出しにまとめて送信。
+        <b>注意</b>: サブスクの利用上限（5時間枠など）を他の作業と共有します。1回の判定は数百〜約1,000トークンです。
+      </div>
+      <div id="llmUrlWrap">
       <label class="label" for="llmApiUrl">API URL</label>
       <input class="input" id="llmApiUrl" type="url" placeholder="http://localhost:11434/v1" style="margin-bottom:.9em">
+      </div>
       <label class="label" for="llmModel">モデル名</label>
       <input class="input" id="llmModel" type="text" placeholder="例: gemma3 / gpt-4o-mini（空で無効化）" style="margin-bottom:.9em">
-      <label class="label" for="llmApiKey">APIキー</label>
+      <label class="label" for="llmApiKey" id="llmKeyLabel">APIキー</label>
       <input class="input" id="llmApiKey" type="password" autocomplete="off" placeholder="変更しない場合は空欄" style="margin-bottom:.4em">
       <p id="llmKeyState" style="color:var(--text-dim);font-size:.85em;margin-bottom:1em"></p>
 
@@ -2340,12 +2352,23 @@ function llmSay(t, kind) {
   el.textContent = t;
   el.style.color = kind === 'error' ? 'var(--error)' : kind === 'ok' ? 'var(--success)' : 'var(--text-muted)';
 }
+function llmProviderChanged() {
+  const cli = document.getElementById('llmProvider').value === 'claude_cli';
+  document.getElementById('llmCliNote').style.display = cli ? '' : 'none';
+  document.getElementById('llmUrlWrap').style.display = cli ? 'none' : '';
+  document.getElementById('llmKeyLabel').textContent = cli ? 'OAuthトークン（claude setup-token）' : 'APIキー';
+  const m = document.getElementById('llmModel');
+  m.placeholder = cli ? '例: haiku（空で無効化）' : '例: gemma3 / gpt-4o-mini（空で無効化）';
+  if (cli && !m.value) m.value = 'haiku';
+}
 async function llmLoad() {
   if (!getAdminToken()) { llmSay('管理トークン未設定（「管理」タブで設定）', 'error'); return; }
   try {
     const c = await backendsApi('GET', '/llm_config');
+    document.getElementById('llmProvider').value = c.provider || 'openai';
     document.getElementById('llmApiUrl').value = c.api_url || '';
     document.getElementById('llmModel').value = c.model || '';
+    llmProviderChanged();
     document.getElementById('llmKeyState').textContent =
       (c.has_key ? 'APIキー: 保存済み' : 'APIキー: 未設定') + (c.model ? '' : ' / 現在は無効（モデル名が空）');
     llmSay('', '');
@@ -2353,6 +2376,7 @@ async function llmLoad() {
 }
 async function llmSave(clearKey) {
   const body = {
+    provider: document.getElementById('llmProvider').value,
     api_url: document.getElementById('llmApiUrl').value.trim(),
     model: document.getElementById('llmModel').value.trim(),
   };
