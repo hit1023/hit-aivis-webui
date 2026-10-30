@@ -1234,7 +1234,7 @@
   <div class="page active" id="page-tts">
 
     <div class="card">
-      <div class="card-title">スピーカー</div>
+      <div class="card-title">Speaker</div>
       <div class="select-wrapper">
         <select id="speakerSelect"><option value="">読み込み中...</option></select>
         <span class="select-arrow">▾</span>
@@ -1246,7 +1246,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">テキスト</div>
+      <div class="card-title">Text</div>
       <textarea id="textInput" placeholder="読み上げるテキストを入力してください..." maxlength="500"></textarea>
       <div class="text-foot">
         <div class="char-count"><span id="charCount">0</span> / 500</div>
@@ -1259,7 +1259,7 @@
     </div>
 
     <div class="card player-area" id="playerArea">
-      <div class="card-title">再生</div>
+      <div class="card-title">Playback</div>
       <div class="waveform-bar">
         <div class="wave-bars" id="waveBars">
           <div class="wave-bar"></div><div class="wave-bar"></div>
@@ -1272,7 +1272,7 @@
 
       <div class="eq" id="eq">
         <div class="eq-head">
-          <div class="eq-title">イコライザー</div>
+          <div class="eq-title">Equalizer</div>
           <label class="eq-switch"><input type="checkbox" id="eqOn" checked> <span>有効</span></label>
           <select id="eqPreset" class="eq-preset"></select>
           <button class="eq-reset" type="button" onclick="eqReset()">リセット</button>
@@ -1296,11 +1296,11 @@
 
     <div class="card fold" data-fold="params" data-fold-head=".param-card-header">
       <div class="param-card-header">
-        <div class="card-title" style="margin-bottom:0">パラメータ</div>
+        <div class="card-title" style="margin-bottom:0">Parameters</div>
         <div id="presetActiveBadge"></div>
       </div>
       <div class="legacy-convert">
-        <div class="legacy-convert-label">旧パラメータを変換して適用</div>
+        <div class="legacy-convert-label">Legacy Convert</div>
         <div class="legacy-convert-row">
           <input type="text" id="legacyParams" class="legacy-input"
             placeholder="style_weight=1&amp;length=1&amp;noise=0.6&amp;noisew=0.8&amp;sdp_ratio=0.2">
@@ -1344,7 +1344,7 @@
       <div class="preset-action-bar" id="presetBar"></div>
       <div class="api-preview">
         <div class="api-preview-header">
-          <div class="api-preview-title">API サンプル</div>
+          <div class="api-preview-title">API Sample</div>
           <button class="api-copy-btn" onclick="copyApiSample()" title="コピー">コピー</button>
         </div>
         <pre class="api-preview-code" id="apiSampleCode"></pre>
@@ -1353,7 +1353,7 @@
 
     <div class="card fold" data-fold="vram" data-fold-head=".vram-header" style="animation-delay:0.25s">
       <div class="vram-header">
-        <div class="card-title" style="margin-bottom:0">VRAMロード状態</div>
+        <div class="card-title" style="margin-bottom:0">VRAM Status</div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadModels()">
           <svg id="refreshIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
@@ -1391,7 +1391,7 @@
 
     <!-- 単語追加フォーム -->
     <div class="card">
-      <div class="card-title">単語を追加</div>
+      <div class="card-title">Add Word</div>
 
       <div class="dict-form-grid">
         <div class="form-group">
@@ -1442,7 +1442,7 @@
 
     <!-- CSVインポート -->
     <div class="card">
-      <div class="card-title">CSVファイルからインポート</div>
+      <div class="card-title">Import CSV</div>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.8rem;line-height:1.6">
         UTF-8 CSV形式でまとめて登録できます。同じ表層形の単語は上書き（UPSERT）されます。
       </p>
@@ -1474,7 +1474,7 @@
     <!-- 単語一覧 -->
     <div class="card">
       <div class="dict-header">
-        <div class="card-title" style="margin-bottom:0">登録単語</div>
+        <div class="card-title" style="margin-bottom:0">Dictionary</div>
         <div style="display:flex;align-items:center;gap:0.6rem">
           <span class="dict-count" id="dictCount">― 件</span>
           <button class="refresh-btn" id="dictRefreshBtn" onclick="loadDict()">
@@ -1506,7 +1506,7 @@
 
     <!-- ルール追加フォーム -->
     <div class="card">
-      <div class="card-title">ルールを追加</div>
+      <div class="card-title">Add Rule</div>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
         音声合成前にテキストへ適用する置換ルールを登録します。<br>
         例: <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px">Example → イグザンプル</code>
@@ -1531,7 +1531,7 @@
 
     <!-- ファイルインポート -->
     <div class="card">
-      <div class="card-title">ファイルからインポート</div>
+      <div class="card-title">Import File</div>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.8rem;line-height:1.6">
         <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px">src@dst</code>
         形式のテキストファイル（UTF-8）をアップロードします。<code>name.txt</code> と同じ形式です。
@@ -1563,7 +1563,7 @@
     <!-- ルール一覧 -->
     <div class="card">
       <div class="dict-header">
-        <div class="card-title" style="margin-bottom:0">登録ルール</div>
+        <div class="card-title" style="margin-bottom:0">Rules</div>
         <div style="display:flex;align-items:center;gap:0.6rem">
           <span class="dict-count" id="repCount">― 件</span>
           <button class="refresh-btn" onclick="repExport()">
@@ -1606,7 +1606,7 @@
   <div class="page" id="page-history">
 
     <div class="card">
-      <div class="card-title">音声合成履歴</div>
+      <div class="card-title">History</div>
       <div style="display:flex;gap:0.6rem;align-items:center;margin-bottom:0.8rem;flex-wrap:wrap;">
         <select id="histSpeakerFilter" style="flex:1;min-width:160px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;font-size:0.85rem;">
           <option value="">すべてのスピーカー</option>
@@ -1627,7 +1627,7 @@
 
     <!-- 入力 -->
     <div class="card">
-      <div class="card-title">単語リストを入力</div>
+      <div class="card-title">Word List</div>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">
         1行1単語で入力してください。▶ で再生して読み方を耳で確認し、<br>
         間違いがあれば <strong style="color:var(--error)">✗ 修正</strong> から置換ルール追加または単語辞書登録ができます。
@@ -1660,7 +1660,7 @@
     <!-- 確認結果 -->
     <div class="card" id="kanaResultCard" style="display:none;">
       <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.6rem;flex-wrap:wrap;">
-        <div class="card-title" style="margin-bottom:0;flex:1;">読み確認</div>
+        <div class="card-title" style="margin-bottom:0;flex:1;">Reading Check</div>
         <span id="kanaProgressText" style="font-size:0.8rem;color:var(--text-muted);"></span>
       </div>
       <div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:0.6rem;overflow:hidden;">
@@ -1680,7 +1680,7 @@
 
     <!-- 設定 -->
     <div class="card">
-      <div class="card-title">設定</div>
+      <div class="card-title">Settings</div>
       <div style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;">
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="font-size:0.75rem;color:var(--text-muted);">スピーカー</label>
@@ -1721,7 +1721,7 @@
 
     <!-- テキスト入力 -->
     <div class="card">
-      <div class="card-title">スクリプト</div>
+      <div class="card-title">Script</div>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.8rem;line-height:1.6">
         テキストを貼り付けてください。改行ごとに1つの発話として処理されます。
       </p>
@@ -1757,14 +1757,14 @@
        ============================ -->
   <div class="page" id="page-backends">
     <div class="card">
-      <div class="card-title">バックエンド稼働状況</div>
+      <div class="card-title">Backend Status</div>
       <div id="bkSummary" class="bk-summary"></div>
       <div id="bkGrid" class="bk-grid"></div>
       <p id="bkFoot" style="color:var(--text-muted);font-size:.8em;margin-top:1em">読み込み中…</p>
     </div>
 
     <div class="card">
-      <div class="card-title">NODE 管理（追加・削除）</div>
+      <div class="card-title">Node Management</div>
       <p style="color:var(--text-muted);font-size:.9em;margin-bottom:1em">
         追加・削除は再起動なしで反映され、ルーターの <code>/data/backends.json</code> に保存されます（保存後は <code>.env</code> の AIVIS_BACKEND_URLS より優先されます）。
         上の稼働状況は管理トークンなしで見られます。
@@ -1795,7 +1795,7 @@
 
   <div class="page" id="page-settings">
     <div class="card">
-      <div class="card-title">接続設定</div>
+      <div class="card-title">Connection</div>
       <p style="color:var(--text-dim);font-size:.9em;margin-bottom:1.2em">
         変更はブラウザに保存されます。空欄にして保存するとデフォルト値（ビルド時設定）に戻ります。
       </p>
@@ -1825,7 +1825,7 @@
     </div>
 
     <div class="card" id="llmCard">
-      <div class="card-title">LLM読み判定（読みチェック用）</div>
+      <div class="card-title">LLM Reading Check</div>
       <p style="color:var(--text-dim);font-size:.9em;margin-bottom:1em">
         「読みチェック」タブの <b>LLMで読みを確認</b> で使います。単語と、AivisSpeechが付けた読み（カナ）をLLMに渡し、読みが正しいかを自動判定します。
         OpenAI互換API（<code>/chat/completions</code>）なら何でも使えます（Ollama、OpenAI、Gemini互換エンドポイント等）。
@@ -1867,7 +1867,7 @@
     </div>
 
     <div class="card" id="settingsStatusCard">
-      <div class="card-title">接続テスト</div>
+      <div class="card-title">Connection Test</div>
       <div id="settingsStatus" style="font-size:.9em;color:var(--text-dim)">保存後に自動で確認します…</div>
     </div>
   </div><!-- /page-settings -->
