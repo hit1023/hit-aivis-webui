@@ -138,6 +138,9 @@
   .bk-bar > i { display:block; height:100%; border-radius:99px; transition:width .5s; }
   .bk-spark { display:flex; align-items:flex-end; gap:2px; height:34px; }
   .bk-spark > i { flex:1; min-width:3px; background:var(--accent); border-radius:2px 2px 0 0; opacity:.85; }
+  .bk-card.syncing { border-color:#f5b94a; }
+  .bk-card.failed { border-color:var(--error); }
+  .bk-warn { color:#f5b94a; }
   .bk-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem; text-align:center; }
   .bk-stats div { background:var(--bg); border-radius:8px; padding:.4rem .2rem; }
   .bk-stats b { display:block; font-size:1.05rem; }
@@ -1827,9 +1830,37 @@ function bkAgo(epoch) {
 }
 function bkLatencyColor(ms) { return ms < 50 ? 'var(--success)' : ms < 150 ? '#f5b94a' : 'var(--error)'; }
 
+// 同期中／失敗の台に出す進捗（モデルの導入数と、辞書の単語コピーの状態）
+const BK_WORDS = { waiting: '待機中', syncing: '同期中', done: '完了' };
+function bkWordsText(b) {
+  const n = b.words_total == null ? '' : `（${b.words_total} 語）`;
+  return `${BK_WORDS[b.words_state] || '待機中'}${n}`;
+}
+function bkSyncBlock(b) {
+  const box = bkEl('div');
+  box.style.cssText = 'display:flex;flex-direction:column;gap:.6rem';
+  const total = b.sync_total || 0, done = b.sync_done || 0;
+  const mr = bkEl('div', 'bk-row');
+  mr.append(bkEl('span', '', 'モデル'), bkEl('b', '', total ? `${done} / ${total}` : '—'));
+  const bar = bkEl('div', 'bk-bar'); const fill = bkEl('i');
+  fill.style.width = (total ? Math.round(done * 100 / total) : 0) + '%';
+  fill.style.background = b.state === 'failed' ? 'var(--error)' : '#f5b94a';
+  bar.append(fill);
+  const m = bkEl('div'); m.append(mr, bar); box.append(m);
+  if (b.state === 'syncing' && b.sync_current) box.append(bkEl('div', 'bk-sub', `導入中: ${b.sync_current}`));
+  const wr = bkEl('div', 'bk-row');
+  wr.append(bkEl('span', '', '辞書の単語'), bkEl('b', '', bkWordsText(b)));
+  box.append(wr);
+  if (b.state === 'failed' && b.error) box.append(bkEl('div', 'bk-sub', `失敗: ${b.error}`));
+  return box;
+}
+
+let _bkPrevSync = 0;
 function bkRender(data) {
   const list = data.backends;
-  const upN = list.filter(b => b.ok).length;
+  const syncN = list.filter(b => b.state === 'syncing').length;
+  const act = list.filter(b => (b.state || 'active') === 'active');
+  const upN = act.filter(b => b.ok).length;
   const total = list.reduce((n, b) => n + (b.requests || 0), 0);
   const errs = list.reduce((n, b) => n + (b.errors || 0), 0);
   const recent = list.flatMap(b => b.recent_ms || []);
@@ -1837,7 +1868,8 @@ function bkRender(data) {
 
   const sum = document.getElementById('bkSummary');
   sum.replaceChildren();
-  [[`${upN} / ${list.length}`, '稼働中の台', upN === list.length ? 'var(--success)' : 'var(--error)'],
+  [[`${upN} / ${act.length}`, '稼働中の台', upN === act.length ? 'var(--success)' : 'var(--error)'],
+   ...(syncN ? [[syncN, '同期中の台', '#f5b94a']] : []),
    [total, '処理した件数', null],
    [avg === null ? '—' : `${(avg / 1000).toFixed(1)} 秒`, '平均の合成時間（直近）', null],
    [errs, 'エラー', errs ? 'var(--error)' : null]].forEach(([v, l, c]) => {
@@ -1851,7 +1883,8 @@ function bkRender(data) {
   const grid = document.getElementById('bkGrid');
   grid.replaceChildren();
   list.forEach((b, i) => {
-    const card = bkEl('div', 'bk-card' + (b.ok ? '' : ' down'));
+    const st0 = b.state || 'active';
+    const card = bkEl('div', 'bk-card' + (st0 !== 'active' ? ' ' + st0 : (b.ok ? '' : ' down')));
     const head = bkEl('div', 'bk-head');
     head.append(bkEl('span', 'bk-dot ' + (b.ok ? 'ok' : 'ng')));
     const nm = bkEl('div');
@@ -1859,10 +1892,17 @@ function bkRender(data) {
     const host = _bkNames[i] ? _bkNames[i].replace(/^https?:\/\//, '') : '';
     if (host) nm.append(bkEl('div', 'bk-sub', host));
     head.append(nm);
-    const badge = bkEl('span', 'bk-badge', b.ok ? '稼働中' : '応答なし');
-    badge.style.color = b.ok ? 'var(--success)' : 'var(--error)';
+    const pend = st0 !== 'active';
+    const badge = bkEl('span', 'bk-badge', st0 === 'syncing' ? '🔄 同期中' : st0 === 'failed' ? '同期失敗' : (b.ok ? '稼働中' : '応答なし'));
+    badge.style.color = st0 === 'syncing' ? '#f5b94a' : (b.ok && !pend) ? 'var(--success)' : 'var(--error)';
     head.append(badge);
     card.append(head);
+    if (pend) {
+      card.append(bkSyncBlock(b));
+      card.append(bkEl('div', 'bk-sub', st0 === 'syncing'
+        ? '完了すると自動で振り分けに加わります' : '取り消してから、原因を直して追加し直してください'));
+      grid.append(card); return;
+    }
     if (b.cloud) { grid.append(card); return; }
 
     // 応答時間バー
@@ -1914,6 +1954,9 @@ function bkRender(data) {
     card.append(bkEl('div', 'bk-sub', `最後に使われた: ${bkAgo(b.last_used)}`));
     grid.append(card);
   });
+  // 同期の開始・完了に合わせて管理側の一覧も追従させる
+  if ((syncN || _bkPrevSync || list.some(b => b.state === 'failed')) && getAdminToken()) backendsLoad(true);
+  _bkPrevSync = syncN;
   document.getElementById('bkFoot').textContent =
     `5秒ごとに自動更新 ・ 最終更新 ${new Date().toLocaleTimeString('ja-JP')} ・ 処理件数などは再起動でリセットされます`;
 }
@@ -1948,28 +1991,31 @@ function backendsRender(data) {
   if (!data.editable) {
     backendsSay('現在は Aivis Cloud を使用中のため、台の編集はできません（TTS_PROVIDER=local のときのみ）。');
   }
-  const only = data.backends.length <= 1;
+  const only = data.backends.filter(b => (b.state || 'active') === 'active').length <= 1;
   data.backends.forEach(b => {
+    const pend = (b.state || 'active') !== 'active';
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:.8em;padding:.6em .8em;border:1px solid var(--border);border-radius:8px;flex-wrap:wrap';
     const dot = document.createElement('span');
-    dot.textContent = b.ok ? '●' : '●';
-    dot.style.color = b.ok ? 'var(--success)' : 'var(--error)';
+    dot.textContent = pend ? '🔄' : '●';
+    dot.style.color = b.state === 'syncing' ? '#f5b94a' : (b.ok && !pend) ? 'var(--success)' : 'var(--error)';
     const url = document.createElement('code');
     url.textContent = b.url;
     url.style.flex = '1';
     const info = document.createElement('span');
     info.style.cssText = 'color:var(--text-muted);font-size:.85em';
     info.textContent = b.cloud ? 'Aivis Cloud'
+      : b.state === 'syncing' ? `同期中 ・ モデル ${b.sync_done}/${b.sync_total}${b.sync_current ? '（' + b.sync_current + '）' : ''} ・ 辞書の単語 ${bkWordsText(b)}`
+      : b.state === 'failed' ? `同期に失敗しました (${b.error || ''}) ・ モデル ${b.sync_done}/${b.sync_total} ・ 辞書の単語 ${bkWordsText(b)}`
       : b.ok ? `${b.latency_ms} ms ・ モデル ${b.loaded_models} 件ロード中`
       : `接続できません (${b.error || ''})`;
     row.append(dot, url, info);
     if (data.editable) {
       const del = document.createElement('button');
       del.className = 'btn-danger';
-      del.textContent = '🗑 削除';
-      del.disabled = only;
-      del.title = only ? '最後の1台は削除できません' : '';
+      del.textContent = pend ? '✖ 取消' : '🗑 削除';
+      del.disabled = !pend && only;
+      del.title = !pend && only ? '最後の1台は削除できません' : '';
       del.onclick = () => backendsRemove(b.url);
       row.append(del);
     }
@@ -1977,13 +2023,13 @@ function backendsRender(data) {
   });
 }
 
-async function backendsLoad() {
+async function backendsLoad(silent) {
   if (!getAdminToken()) { backendsSay('管理トークンを入力して保存してください。'); document.getElementById('backendsList').replaceChildren(); return; }
-  backendsSay('読み込み中…');
+  if (!silent) backendsSay('読み込み中…');
   try {
     const data = await backendsApi('GET', '/backends');
     backendsRender(data);
-    if (data.editable) backendsSay(`${data.backends.length} 台が登録されています。`);
+    if (data.editable && !silent) backendsSay(`${data.backends.length} 台が登録されています。`);
   } catch (e) {
     document.getElementById('backendsList').replaceChildren();
     backendsSay(e.status === 401 ? '管理トークンが正しくありません。'
@@ -2011,8 +2057,13 @@ async function backendsAdd() {
     const data = await backendsApi('POST', '/backends', { url });
     document.getElementById('backendsNewUrl').value = '';
     backendsRender(data);
-    const n = data.added ? data.added.synced_words : 0;
-    backendsSay(`✅ 追加しました（計 ${data.backends.length} 台、辞書 ${n} 語をコピー）`, 'ok');
+    const a = data.added || {};
+    if (a.state === 'syncing') {
+      backendsSay(`🔄 同期を開始しました（不足モデル ${a.missing_models} 件＋辞書）。完了すると自動で振り分けに加わります。進み具合は下の一覧とダッシュボードで確認できます。`, 'ok');
+      bkRefresh();
+    } else {
+      backendsSay(`✅ 追加しました（計 ${data.backends.length} 台、辞書 ${a.synced_words || 0} 語をコピー）`, 'ok');
+    }
   } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
 }
 
@@ -2021,7 +2072,8 @@ async function backendsRemove(url) {
   try {
     const data = await backendsApi('DELETE', '/backends?url=' + encodeURIComponent(url));
     backendsRender(data);
-    backendsSay(`🗑 削除しました（計 ${data.backends.length} 台）`, 'ok');
+    backendsSay(`🗑 外しました（${data.backends.length} 件）`, 'ok');
+    bkRefresh();
   } catch (e) { backendsSay(`❌ ${e.message}`, 'error'); }
 }
 
