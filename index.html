@@ -1764,7 +1764,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">台の管理（追加・削除）</div>
+      <div class="card-title">NODE 管理（追加・削除）</div>
       <p style="color:var(--text-muted);font-size:.9em;margin-bottom:1em">
         追加・削除は再起動なしで反映され、ルーターの <code>/data/backends.json</code> に保存されます（保存後は <code>.env</code> の AIVIS_BACKEND_URLS より優先されます）。
         上の稼働状況は管理トークンなしで見られます。
@@ -1780,7 +1780,7 @@
       <div id="backendsMsg" style="font-size:.9em;margin-bottom:.8em;min-height:1.2em"></div>
       <div id="backendsList" style="display:flex;flex-direction:column;gap:.5em;margin-bottom:1.4em"></div>
 
-      <label class="label" for="backendsNewUrl">台を追加</label>
+      <label class="label" for="backendsNewUrl">ノードを追加</label>
       <div style="display:flex;gap:.5em;flex-wrap:wrap">
         <input class="input" id="backendsNewUrl" type="url" placeholder="http://192.168.0.22:10101" style="flex:1;min-width:16em">
         <button class="btn-ghost" onclick="backendsTest()">接続テスト</button>
@@ -1788,7 +1788,7 @@
         <button class="btn-ghost" onclick="backendsLoad()" title="再読み込み">再読込</button>
       </div>
       <p style="color:var(--text-muted);font-size:.85em;margin-top:.6em">
-        社内ネットワーク（プライベートIP）のサーバーのみ登録できます。追加時は接続とモデル（話者）の揃い具合を確認し、足りなければ登録されません（モデルのコピーは自動ではしないので、先にエンジンのデータフォルダをコピーしてください）。辞書は最初の台から自動でコピーされます。最後の1台は削除できません。
+        社内ネットワーク（プライベートIP）のサーバーのみ登録できます。追加時は接続とモデル（話者）の揃い具合を確認し、足りなければ登録されません（モデルのコピーは自動ではしないので、先にエンジンのデータフォルダをコピーしてください）。辞書は最初のノードから自動でコピーされます。最後の1ノードは削除できません。
       </p>
     </div>
   </div><!-- /page-backends -->
@@ -1998,7 +1998,7 @@ async function backendsApi(method, path, body) {
 
 // ---- 稼働状況ダッシュボード（認証不要の /backends/status を5秒ごとに取得） ----
 let _bkTimer = null;
-let _bkNames = [];   // 管理トークンで取得できた台のURL（台番号→ホスト表示に使う）
+let _bkNames = [];   // 管理トークンで取得できたノードのURL（ノード番号→ホスト表示に使う）
 
 function bkStop() { if (_bkTimer) { clearInterval(_bkTimer); _bkTimer = null; } }
 function bkStart() { bkStop(); bkRefresh(); _bkTimer = setInterval(bkRefresh, 5000); }
@@ -2019,7 +2019,7 @@ function bkAgo(epoch) {
 }
 function bkLatencyColor(ms) { return ms < 50 ? 'var(--success)' : ms < 150 ? '#f5b94a' : 'var(--error)'; }
 
-// 同期中／失敗の台に出す進捗（モデルの導入数と、辞書の単語コピーの状態）
+// 同期中／失敗のノードに出す進捗（モデルの導入数と、辞書の単語コピーの状態）
 const BK_WORDS = { waiting: '待機中', syncing: '同期中', done: '完了' };
 function bkWordsText(b) {
   const n = b.words_total == null ? '' : `（${b.words_total} 語）`;
@@ -2057,8 +2057,8 @@ function bkRender(data) {
 
   const sum = document.getElementById('bkSummary');
   sum.replaceChildren();
-  [[`${upN} / ${act.length}`, '稼働中の台', upN === act.length ? 'var(--success)' : 'var(--error)'],
-   ...(syncN ? [[syncN, '同期中の台', '#f5b94a']] : []),
+  [[`${upN} / ${act.length}`, '稼働中のノード', upN === act.length ? 'var(--success)' : 'var(--error)'],
+   ...(syncN ? [[syncN, '同期中のノード', '#f5b94a']] : []),
    [total, '処理した件数', null],
    [avg === null ? '—' : `${(avg / 1000).toFixed(1)} 秒`, '平均の合成時間（直近）', null],
    [errs, 'エラー', errs ? 'var(--error)' : null]].forEach(([v, l, c]) => {
@@ -2077,10 +2077,12 @@ function bkRender(data) {
     const head = bkEl('div', 'bk-head');
     head.append(bkEl('span', 'bk-dot ' + (b.ok ? 'ok' : 'ng')));
     const nm = bkEl('div');
-    nm.append(bkEl('div', 'bk-name', (b.cloud ? 'Aivis Cloud' : `台 ${b.index}`) + ''));
-    if (b.master) nm.append(bkEl('div', 'bk-sub', 'マスター（辞書・モデルの基準）'));
-    const host = _bkNames[i] ? _bkNames[i].replace(/^https?:\/\//, '') : '';
-    if (host) nm.append(bkEl('div', 'bk-sub', host));
+    nm.append(bkEl('div', 'bk-name', (b.cloud ? 'Aivis Cloud' : `NODE ${String(b.index).padStart(2, '0')}`) + ''));
+    if (b.master) nm.append(bkEl('div', 'bk-sub', 'MASTER · dictionary & model source'));
+    if (!b.cloud) {
+      const host = _bkNames[i] ? _bkNames[i].replace(/^https?:\/\//, '') : '';
+      nm.append(bkEl('div', 'bk-sub', host || 'ADDR 非表示（管理トークンで表示）'));
+    }
     head.append(nm);
     const pend = st0 !== 'active';
     const badge = bkEl('span', 'bk-badge', st0 === 'syncing' ? '同期中' : st0 === 'failed' ? '同期失敗' : (b.ok ? '稼働中' : '応答なし'));
@@ -2155,6 +2157,10 @@ async function bkRefresh() {
   try {
     const res = await apiFetch('/backends/status');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    // IP:ポートは非公開情報のため、管理トークンがあるときだけ取得して表示する
+    if (getAdminToken()) {
+      try { _bkNames = (await backendsApi('GET', '/backends')).backends.map(b => b.url); } catch { _bkNames = []; }
+    } else { _bkNames = []; }
     bkRender(await res.json());
   } catch (e) {
     document.getElementById('bkFoot').textContent = `状況を取得できません: ${e.message}`;
@@ -2201,7 +2207,7 @@ function backendsRender(data) {
   const list = document.getElementById('backendsList');
   list.replaceChildren();
   if (!data.editable) {
-    backendsSay('現在は Aivis Cloud を使用中のため、台の編集はできません（TTS_PROVIDER=local のときのみ）。');
+    backendsSay('現在は Aivis Cloud を使用中のため、ノードの編集はできません（TTS_PROVIDER=local のときのみ）。');
   }
   const only = data.backends.filter(b => (b.state || 'active') === 'active').length <= 1;
   data.backends.forEach(b => {
@@ -2232,7 +2238,7 @@ function backendsRender(data) {
         const mb = document.createElement('button');
         mb.className = 'btn-ghost';
         mb.textContent = 'マスターにする';
-        mb.title = 'この台を辞書・モデルの基準にします（他の台へ辞書を反映）';
+        mb.title = 'このノードを辞書・モデルの基準にします（他のノードへ辞書を反映）';
         mb.onclick = () => backendsSetMaster(b.url);
         row.append(mb);
       }
@@ -2242,7 +2248,7 @@ function backendsRender(data) {
       del.className = 'btn-danger';
       del.textContent = pend ? '取消' : '削除';
       del.disabled = !pend && only;
-      del.title = !pend && only ? '最後の1台は削除できません' : '';
+      del.title = !pend && only ? '最後の1ノードは削除できません' : '';
       del.onclick = () => backendsRemove(b.url);
       row.append(del);
     }
@@ -2251,13 +2257,13 @@ function backendsRender(data) {
 }
 
 async function backendsSetMaster(url) {
-  if (!confirm(`${url.replace(/^https?:\/\//, '')} をマスターにします。\n他の台の辞書をマスターに合わせて更新します。よろしいですか？`)) return;
+  if (!confirm(`${url.replace(/^https?:\/\//, '')} をマスターにします。\n他のノードの辞書をマスターに合わせて更新します。よろしいですか？`)) return;
   backendsSay('マスターを切り替え中…');
   try {
     const r = await backendsApi('PUT', '/backends/master', { url });
     backendsRender(r);
     const failed = (r.dict && r.dict.failed) || [];
-    backendsSay(failed.length ? `マスターを切り替えました（辞書の反映に失敗: ${failed.length} 台）` : 'マスターを切り替えました', failed.length ? 'error' : 'ok');
+    backendsSay(failed.length ? `マスターを切り替えました（辞書の反映に失敗: ${failed.length} ノード）` : 'マスターを切り替えました', failed.length ? 'error' : 'ok');
     bkRefresh();
   } catch (e) { backendsSay(`${e.message}`, 'error'); }
 }
@@ -2268,7 +2274,7 @@ async function backendsLoad(silent) {
   try {
     const data = await backendsApi('GET', '/backends');
     backendsRender(data);
-    if (data.editable && !silent) backendsSay(`${data.backends.length} 台が登録されています。`);
+    if (data.editable && !silent) backendsSay(`${data.backends.length} ノードが登録されています。`);
   } catch (e) {
     document.getElementById('backendsList').replaceChildren();
     backendsSay(e.status === 401 ? '管理トークンが正しくありません。'
@@ -2301,13 +2307,13 @@ async function backendsAdd() {
       backendsSay(`同期を開始しました（不足モデル ${a.missing_models} 件＋辞書）。完了すると自動で振り分けに加わります。進み具合は下の一覧とダッシュボードで確認できます。`, 'ok');
       bkRefresh();
     } else {
-      backendsSay(`追加しました（計 ${data.backends.length} 台、辞書 ${a.synced_words || 0} 語をコピー）`, 'ok');
+      backendsSay(`追加しました（計 ${data.backends.length} ノード、辞書 ${a.synced_words || 0} 語をコピー）`, 'ok');
     }
   } catch (e) { backendsSay(`${e.message}`, 'error'); }
 }
 
 async function backendsRemove(url) {
-  if (!confirm(`${url} を一覧から外しますか？\n（台そのものは停止しません）`)) return;
+  if (!confirm(`${url} を一覧から外しますか？\n（ノードそのものは停止しません）`)) return;
   try {
     const data = await backendsApi('DELETE', '/backends?url=' + encodeURIComponent(url));
     backendsRender(data);
@@ -2902,7 +2908,7 @@ async function speak() {
   document.getElementById('ttsStatus').className = 'status';
 
   const t0 = performance.now();
-  // 数秒を超えたら、遅い理由の目安を出す（冷えた台はモデルの読み込みで時間がかかる）
+  // 数秒を超えたら、遅い理由の目安を出す（冷えたノードはモデルの読み込みで時間がかかる）
   const slowTimer = setInterval(() => {
     const sec = Math.floor((performance.now() - t0) / 1000);
     if (sec >= 6) {
@@ -2945,7 +2951,7 @@ async function speak() {
     audio.onended = () => bars.forEach(b => b.classList.remove('playing'));
 
     fetchAndRenderAccent(text, speakerId);
-    const served = res.headers.get('X-Backend');   // どの台が応答したか
+    const served = res.headers.get('X-Backend');   // どのノードが応答したか
     const sec = ((performance.now() - t0) / 1000).toFixed(1);
     showTtsStatus(`✓ 生成完了（${served ? '応答: ' + served.replace(/^https?:\/\//, '') + ' ・ ' : ''}${sec} 秒）`, 'success');
   } catch(e) {
@@ -3027,7 +3033,7 @@ async function loadModels() {
     const list = document.getElementById('modelList');
     if (!models.length) { list.innerHTML = '<div class="vram-empty">モデルが見つかりません</div>'; return; }
 
-    // 同じモデルは1枚にまとめ、どの台でロード中かを台ごとに示す
+    // 同じモデルは1枚にまとめ、どのノードでロード中かをノードごとに示す
     const groups = new Map();
     for (const m of models) {
       if (!groups.has(m.aivm_uuid)) groups.set(m.aivm_uuid, { m, engines: [] });
@@ -3044,7 +3050,7 @@ async function loadModels() {
       }).join('');
       const on = engines.filter(e => e.loaded).length, n = engines.length;
       const state = on === 0 ? 'off' : on === n ? 'on' : 'part';
-      const label = on === 0 ? 'アンロード' : on === n ? `VRAM ロード中（${n}台）` : `一部ロード中（${on}/${n}台）`;
+      const label = on === 0 ? 'アンロード' : on === n ? `VRAM ロード中（${n}ノード）` : `一部ロード中（${on}/${n}ノード）`;
       const chips = engines.map(e =>
         `<span class="engine-chip ${e.loaded ? 'on' : ''}" title="${e.loaded ? 'ロード中' : 'アンロード'}"><i></i>${short(e.url)}</span>`
       ).join('');
@@ -3060,8 +3066,8 @@ async function loadModels() {
             <div class="badge-dot"></div>
             ${label}
           </div>
-          ${on ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')" title="全台のVRAMから解放">解放</button>` : ''}
-          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')" title="全台からアンインストール">削除</button>
+          ${on ? `<button class="unload-btn" id="unload-${m.aivm_uuid}" onclick="unloadModel('${m.aivm_uuid}','${m.model_name}')" title="全ノードのVRAMから解放">解放</button>` : ''}
+          <button class="uninstall-btn" id="uninst-${m.aivm_uuid}" onclick="uninstallModel('${m.aivm_uuid}','${m.model_name}')" title="全ノードからアンインストール">削除</button>
         </div>
       </div>`;
     }).join('');
@@ -4178,7 +4184,7 @@ async function loadHistory(page) {
           <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:0.4rem;">
             <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">${dateStr}</span>
             <span style="font-size:0.8rem;color:var(--accent);font-weight:600;flex:1;">${esc(voice)}</span>
-            ${item.backend ? `<span title="この音声を生成した台" style="font-size:0.7rem;font-family:monospace;color:var(--text-muted);border:1px solid var(--border);border-radius:99px;padding:0.05rem 0.5rem;white-space:nowrap;">${esc(item.backend.replace(/^https?:\/\//, ''))}</span>` : ''}
+            ${item.backend ? `<span title="この音声を生成したノード" style="font-size:0.7rem;font-family:monospace;color:var(--text-muted);border:1px solid var(--border);border-radius:99px;padding:0.05rem 0.5rem;white-space:nowrap;">${esc(item.backend.replace(/^https?:\/\//, ''))}</span>` : ''}
             <button id="hist-play-${idx}" onclick="histPlay(this,${idx})" style="${_histBtnStyle}">▶ 再生</button>
             <button id="hist-copy-${idx}" onclick="histCopy(this,${idx})" style="${_histBtnStyle}">コピー</button>
           </div>
