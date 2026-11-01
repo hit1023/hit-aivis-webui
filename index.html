@@ -3113,14 +3113,10 @@ async function loadModels() {
       const on = loadedAt.length;
       const state = on === 0 ? 'off' : 'on';
       const label = on === 0 ? 'Unloaded' : loadedAt.join(' / ');
-      const chips = loadedAt.map(u =>
-        `<span class="engine-chip on" title="RAMにロード中"><i></i>${u}</span>`
-      ).join('');
       return `
       <div class="model-row ${on ? 'loaded' : ''}">
         <div class="model-info">
           <div class="model-name">${m.model_name}</div>
-          ${chips ? `<div class="model-engines">${chips}</div>` : ''}
           <div class="model-styles">${stylesHtml}</div>
         </div>
         <div class="model-row-right">
