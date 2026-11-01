@@ -1836,7 +1836,7 @@
         <li><b>外部送信</b>: 判定対象の<u>単語のみ</u>がLLMに送られます（本文全体は送りません）。クラウドLLMを指定すると、その事業者に単語が渡ります。</li>
         <li><b>コスト</b>: クラウドLLMは従量課金です。件数が多い読みチェックでは使用量に注意してください。</li>
         <li><b>精度</b>: LLMの読みも誤ることがあります。<u>参考判定</u>として使い、最終判断は耳で確認してください。小さいモデルほど固有名詞に弱くなります。</li>
-        <li><b>キーの保管</b>: APIキー／トークンはルーター側（<code>/data/llm_config.json</code>、権限600）に保存され、画面には再表示されません。保存には「管理」タブの管理トークンが必要です。</li>
+        <li><b>キーの保管</b>: APIキー／トークンはルーター側（<code>/data/llm_config.json</code>、権限600）に保存され、画面には再表示されません。保存には Backends タブ「Node Management」の管理トークンが必要です。</li>
         <li>辞書・置換で読みを設定済みの単語は、判定の対象外になります。</li>
       </ul>
 
@@ -2395,7 +2395,7 @@ function llmProviderChanged() {
   if (cli && !m.value) m.value = 'haiku';
 }
 async function llmLoad() {
-  if (!getAdminToken()) { llmSay('管理トークン未設定（「管理」タブで設定）', 'error'); return; }
+  if (!getAdminToken()) { llmSay('管理トークン未設定（Backends タブの「Node Management」で設定）', 'error'); return; }
   try {
     const c = await backendsApi('GET', '/llm_config');
     document.getElementById('llmProvider').value = c.provider || 'openai';
