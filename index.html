@@ -2158,6 +2158,17 @@ function bkRender(data) {
     });
     card.append(st);
     card.append(bkEl('div', 'bk-sub', `最後に使われた: ${bkAgo(b.last_used)}`));
+    // 有効/無効の切り替え（管理トークンが要る。マスターは無効化できない）
+    if (!b.master) {
+      const tg = bkEl('button', 'btn-ghost', st0 === 'disabled' ? '有効化' : '無効化');
+      if (!getAdminToken() || !_bkNames[i]) {
+        tg.textContent += '（管理トークンが必要）';
+        tg.onclick = () => { switchTab('backends'); document.getElementById('backendsAdminToken').focus(); };
+      } else {
+        tg.onclick = () => backendsSetEnabled(_bkNames[i], st0 === 'disabled');
+      }
+      card.append(tg);
+    }
     grid.append(card);
   });
   // 同期の開始・完了に合わせて管理側の一覧も追従させる
