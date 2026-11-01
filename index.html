@@ -3170,7 +3170,18 @@ async function installModel() {
     const res = await apiFetch(`/models/install`, { method: 'POST', body: form });
     const json = await res.json();
     if (!res.ok) throw new Error(json.detail || 'インストール失敗');
-    uploadShowStatus(`✓ ${json.message}`, 'success');
+    // 受付後はルーターが裏でインストールする。完了まで状態を問い合わせる
+    uploadShowStatus('インストール中...（全ノードへ配信しています）', '');
+    let st = { state: 'running' };
+    while (st.state === 'running') {
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        const sr = await apiFetch(`/models/install/status`);
+        if (sr.ok) st = await sr.json();
+      } catch (_) { /* 一時的な通信失敗は次の巡回で再試行 */ }
+    }
+    if (st.state !== 'done') throw new Error(st.message || 'インストール失敗');
+    uploadShowStatus(`✓ ${st.message}`, 'success');
     uploadClear();
     await loadModels();
   } catch(e) {
