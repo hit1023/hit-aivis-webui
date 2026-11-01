@@ -2296,7 +2296,10 @@ async function backendsSetEnabled(url, enabled) {
   try {
     const r = await backendsApi('PUT', '/backends/enabled', { url, enabled });
     backendsRender(r);
-    backendsSay(enabled ? '有効化しました（振り分けの対象に戻りました）' : '無効化しました（登録は残っています）', 'ok');
+    const a = r.added || {};
+    backendsSay(!enabled ? '無効化しました（登録は残っています）'
+      : a.state === 'syncing' ? `同期を開始しました（不足モデル ${a.missing_models} 件＋辞書）。完了すると元の位置で自動的に振り分けに戻ります。`
+      : `有効化しました（辞書 ${a.synced_words || 0} 語を同期し、振り分けに戻りました）`, 'ok');
     bkRefresh();
   } catch (e) { backendsSay(`${e.message}`, 'error'); }
 }
