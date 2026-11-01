@@ -2981,7 +2981,8 @@ async function speak() {
   }, 1000);
 
   try {
-    const res = await apiFetch(`/speak`, {
+    // 文ごとに合成して、できた文から順に再生する（/speak_stream）。体感の待ち時間は最初の1文ぶん。
+    const res = await apiFetch(`/speak_stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2996,24 +2997,52 @@ async function speak() {
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '生成に失敗しました'); }
 
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
     const audio = document.getElementById('audioPlayer');
-    audio.src = url;
-    audio.play();
-    document.getElementById('dlBtn').href = url;
-    document.getElementById('dlBtn').download = `aivis_${Date.now()}.mp3`;
+    const bars = document.querySelectorAll('.wave-bar');
+    const queue = [], parts = [], backends = new Set();
+    let playingNow = false, firstSec = null;
+    const playNext = () => {
+      const next = queue.shift();
+      if (!next) { playingNow = false; bars.forEach(b => b.classList.remove('playing')); return; }
+      playingNow = true;
+      audio.src = next; audio.play();
+    };
+    audio.onplay  = () => bars.forEach(b => b.classList.add('playing'));
+    audio.onpause = () => { if (!playingNow) bars.forEach(b => b.classList.remove('playing')); };
+    audio.onended = playNext;
     document.getElementById('playerArea').classList.add('visible');
 
-    const bars = document.querySelectorAll('.wave-bar');
-    audio.onplay  = () => bars.forEach(b => b.classList.add('playing'));
-    audio.onpause = () => bars.forEach(b => b.classList.remove('playing'));
-    audio.onended = () => bars.forEach(b => b.classList.remove('playing'));
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '';
+    const handle = (line) => {
+      if (!line.trim()) return;
+      const m = JSON.parse(line);
+      if (m.error) throw new Error(m.error);
+      const bin = Uint8Array.from(atob(m.audio), c => c.charCodeAt(0));
+      const blob = new Blob([bin], { type: 'audio/mpeg' });
+      parts.push(blob); backends.add(m.backend);
+      queue.push(URL.createObjectURL(blob));
+      if (firstSec === null) firstSec = ((performance.now() - t0) / 1000).toFixed(1);
+      if (!playingNow) playNext();
+      showTtsStatus(`生成中… ${m.i + 1}/${m.n} 文（最初の音まで ${firstSec} 秒）`, '');
+    };
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf('\n')) >= 0) { handle(buf.slice(0, nl)); buf = buf.slice(nl + 1); }
+    }
+    handle(buf);
+
+    const whole = URL.createObjectURL(new Blob(parts, { type: 'audio/mpeg' }));   // MP3 は連結してもそのまま再生できる
+    document.getElementById('dlBtn').href = whole;
+    document.getElementById('dlBtn').download = `aivis_${Date.now()}.mp3`;
 
     fetchAndRenderAccent(text, speakerId);
-    const served = res.headers.get('X-Backend');   // どのノードが応答したか
+    const served = [...backends].map(u => u.replace(/^https?:\/\//, '')).join(', ');   // どのノードが応答したか
     const sec = ((performance.now() - t0) / 1000).toFixed(1);
-    showTtsStatus(`✓ 生成完了（${served ? '応答: ' + served.replace(/^https?:\/\//, '') + ' ・ ' : ''}${sec} 秒）`, 'success');
+    showTtsStatus(`✓ 生成完了（${served ? '応答: ' + served + ' ・ ' : ''}最初の音 ${firstSec} 秒 / 全体 ${sec} 秒）`, 'success');
   } catch(e) {
     showTtsStatus(`エラー: ${e.message}`, 'error');
   } finally {
