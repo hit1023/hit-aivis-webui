@@ -3108,17 +3108,19 @@ async function loadModels() {
           `<div class="style-chip">${sp.name} / ${st.name} &nbsp; <span>ID: ${st.id}</span></div>`
         ).join('');
       }).join('');
-      const on = engines.filter(e => e.loaded).length, n = engines.length;
-      const state = on === 0 ? 'off' : on === n ? 'on' : 'part';
-      const label = on === 0 ? 'Unloaded' : on === n ? `VRAM LOADED (${n} nodes)` : `PARTIAL (${on}/${n} nodes)`;
-      const chips = engines.map(e =>
-        `<span class="engine-chip ${e.loaded ? 'on' : ''}" title="${e.loaded ? 'ロード中' : 'アンロード'}"><i></i>${short(e.url)}</span>`
+      // 1モデルは1ノードにだけロードされる運用。どのノードのRAMに載っているかだけを示す
+      const loadedAt = engines.filter(e => e.loaded).map(e => short(e.url));
+      const on = loadedAt.length;
+      const state = on === 0 ? 'off' : 'on';
+      const label = on === 0 ? 'Unloaded' : loadedAt.join(' / ');
+      const chips = loadedAt.map(u =>
+        `<span class="engine-chip on" title="RAMにロード中"><i></i>${u}</span>`
       ).join('');
       return `
       <div class="model-row ${on ? 'loaded' : ''}">
         <div class="model-info">
           <div class="model-name">${m.model_name}</div>
-          <div class="model-engines">${chips}</div>
+          ${chips ? `<div class="model-engines">${chips}</div>` : ''}
           <div class="model-styles">${stylesHtml}</div>
         </div>
         <div class="model-row-right">
