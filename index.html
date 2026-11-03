@@ -1243,7 +1243,7 @@
 
   /* ===== モバイル（スマホ幅） ===== */
   @media (max-width: 600px) {
-    .container { padding: .9rem 1rem calc(6.5rem + env(safe-area-inset-bottom)); }
+    .container { padding: .9rem 1rem calc(1.6rem + env(safe-area-inset-bottom)); }
     .card { padding: 1.1rem; margin-bottom: .9rem; border-radius: 14px; }
     header { margin-bottom: .8rem; }
     .subtitle { font-size:.62rem; letter-spacing:.04em; }
@@ -1260,7 +1260,7 @@
   }
 
   /* ===== タブ: PC は英語ラベル・日本語ラベルはスマホのみ ===== */
-  .t-ja, .tab-more { display:none; }
+  .t-ja, .menu-btn, .menu-close { display:none; }
   #tab-tts { order:0; }
   #tab-dict { order:1; }
   #tab-replacer { order:2; }
@@ -1269,12 +1269,11 @@
   #tab-reader { order:5; }
   #tab-backends { order:6; }
   #tab-settings { order:7; }
-  .tab-more { order:99; }
-  .tab-sec { display:contents; }
 
   /* ===== スマホ専用レイアウト（老眼向け: 大きな文字 + 下固定のタブバー） ===== */
   @media (max-width: 600px) {
-    :root { --text-muted:#9fb0d0; --border:#2a3c60; }
+    :root { --text-muted:#cdd7ee; --text-dim:#e2e8f6; --border:#33466f; }
+    ::placeholder { color:#aab8d6 !important; opacity:1; }
     html { font-size:18px; }
     html[data-fs="l"]  { font-size:20px; }
     html[data-fs="xl"] { font-size:22px; }
@@ -1295,21 +1294,25 @@
     .speak-hint { display:none; }
     #audioPlayer { width:100%; height:56px; }
 
-    /* 下固定タブバー */
-    .tab-nav { position:fixed; left:0; right:0; bottom:0; top:auto; z-index:900; margin:0; padding:.4rem .5rem calc(.4rem + env(safe-area-inset-bottom));
-      display:grid; grid-template-columns:repeat(4,1fr); gap:.3rem; overflow:visible; border:none; border-top:1px solid var(--border);
-      background:rgba(8,11,20,.97); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); -webkit-mask-image:none; mask-image:none; }
-    .t-en { display:none; } .t-ja, .tab-more { display:inline; }
-    .tab-btn, .tab-more { font-family:'Noto Sans JP',sans-serif !important; text-transform:none !important; letter-spacing:0 !important; font-weight:700;
-      font-size:.78rem !important; line-height:1.25; min-height:56px; margin:0 !important; padding:.3rem .1rem; color:var(--text-muted);
-      background:var(--surface); border:1px solid var(--border) !important; border-radius:12px; display:flex; align-items:center; justify-content:center; text-align:center; white-space:normal; cursor:pointer; }
-    .tab-btn.active, .tab-more.active { background:rgba(79,142,255,.18); border-color:var(--accent) !important; color:#fff; }
-    .tab-sec { display:none; position:absolute; left:.5rem; right:.5rem; bottom:calc(100% + .4rem); grid-template-columns:1fr 1fr; gap:.4rem;
-      padding:.5rem; background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:0 -10px 40px rgba(0,0,0,.6); }
-    .tab-nav.more-open .tab-sec { display:grid; }
-    .tab-sec .tab-btn { min-height:60px; font-size:.95rem !important; }
-    .tab-sec .tab-btn:last-child { grid-column:1 / -1; }
-    #toastHost { bottom:calc(5.5rem + env(safe-area-inset-bottom)); }
+    /* ハンバーガーメニュー: 右上のボタンで全画面の大きなメニューを開く */
+    header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem; }
+    header .sub-row { flex-basis:100%; }
+    .menu-btn { display:inline-flex; align-items:center; gap:.6rem; min-height:52px; padding:.5rem .9rem; border-radius:12px; cursor:pointer;
+      background:var(--surface2); border:1px solid var(--accent); color:#fff; font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size:1rem; }
+    .mb-bars, .mb-bars::before, .mb-bars::after { display:block; width:22px; height:3px; border-radius:2px; background:#fff; }
+    .mb-bars { position:relative; } .mb-bars::before, .mb-bars::after { content:''; position:absolute; left:0; }
+    .mb-bars::before { top:-7px; } .mb-bars::after { top:7px; }
+    .menu-close { display:flex !important; align-items:center; justify-content:center; gap:.5rem; min-height:56px; flex-shrink:0; border-radius:14px; cursor:pointer;
+      background:var(--surface2); border:1px solid var(--accent); color:#fff; font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size:1.1rem; }
+    .t-en { display:none; } .t-ja { display:inline; }
+    .tab-nav { position:fixed; inset:0; z-index:900; display:none; flex-direction:column; flex-wrap:nowrap; gap:.6rem; margin:0; border:none; overflow-y:auto;
+      padding:1rem 1rem calc(1.5rem + env(safe-area-inset-bottom)); background:#080b14; -webkit-mask-image:none; mask-image:none; }
+    .tab-nav.menu-open { display:flex; }
+    body.menu-locked { overflow:hidden; }
+    .tab-btn { font-family:'Noto Sans JP',sans-serif !important; text-transform:none !important; letter-spacing:.02em !important; font-weight:700;
+      font-size:1.2rem !important; min-height:64px; margin:0 !important; padding:.6rem 1.1rem; color:var(--text);
+      background:var(--surface); border:1px solid var(--border) !important; border-radius:14px; display:flex; align-items:center; justify-content:flex-start; text-align:left; cursor:pointer; flex-shrink:0; }
+    .tab-btn.active { background:rgba(79,142,255,.2); border-color:var(--accent) !important; color:#fff; }
   }
 
   /* 文字サイズ切替ボタン（設定タブ） */
@@ -1325,24 +1328,25 @@
       <div class="logo-icon" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       <h1><span class="w1">Aivis</span><span class="w2">Studio</span></h1>
     </div>
+    <button class="menu-btn" id="menuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tabNav" onclick="toggleMenu(event)">
+      <span class="mb-bars" aria-hidden="true"></span><span class="mb-cur" id="menuCur">音声合成</span>
+    </button>
     <div class="sub-row">
       <span class="subtitle">TEXT-TO-SPEECH · POWERED BY AIVISSPEECH ENGINE</span>
       <span class="status-pill" id="hdrStatus"><i></i><span>CONNECTING</span></span>
     </div>
   </header>
 
-  <nav class="tab-nav" role="tablist" aria-label="メインメニュー" onkeydown="tabKeydown(event)">
+  <nav class="tab-nav" id="tabNav" role="tablist" aria-label="メインメニュー" onkeydown="tabKeydown(event)">
+    <button class="menu-close" type="button" onclick="toggleMenu(null,false)">× 閉じる</button>
     <button class="tab-btn active" role="tab" id="tab-tts" aria-controls="page-tts" aria-selected="true" tabindex="0" onclick="switchTab('tts')"><span class="t-en">Synthesis</span><span class="t-ja">音声合成</span></button>
     <button class="tab-btn" role="tab" id="tab-dict" aria-controls="page-dict" aria-selected="false" tabindex="-1" onclick="switchTab('dict')"><span class="t-en">Dictionary</span><span class="t-ja">辞書</span></button>
+    <button class="tab-btn" role="tab" id="tab-replacer" aria-controls="page-replacer" aria-selected="false" tabindex="-1" onclick="switchTab('replacer')"><span class="t-en">Replace Rules</span><span class="t-ja">置換ルール</span></button>
     <button class="tab-btn" role="tab" id="tab-history" aria-controls="page-history" aria-selected="false" tabindex="-1" onclick="switchTab('history')"><span class="t-en">History</span><span class="t-ja">履歴</span></button>
-    <div class="tab-sec" id="tabSec">
-      <button class="tab-btn" role="tab" id="tab-kana" aria-controls="page-kana" aria-selected="false" tabindex="-1" onclick="switchTab('kana')"><span class="t-en">Reading Check</span><span class="t-ja">読み確認</span></button>
-      <button class="tab-btn" role="tab" id="tab-replacer" aria-controls="page-replacer" aria-selected="false" tabindex="-1" onclick="switchTab('replacer')"><span class="t-en">Replace Rules</span><span class="t-ja">置換ルール</span></button>
-      <button class="tab-btn" role="tab" id="tab-reader" aria-controls="page-reader" aria-selected="false" tabindex="-1" onclick="switchTab('reader')"><span class="t-en">Reader</span><span class="t-ja">読み上げ</span></button>
-      <button class="tab-btn" role="tab" id="tab-backends" aria-controls="page-backends" aria-selected="false" tabindex="-1" onclick="switchTab('backends')"><span class="t-en">Backends</span><span class="t-ja">サーバー</span></button>
-      <button class="tab-btn" role="tab" id="tab-settings" aria-controls="page-settings" aria-selected="false" tabindex="-1" onclick="switchTab('settings')" style="margin-left:auto"><span class="t-en">Settings</span><span class="t-ja">設定</span></button>
-    </div>
-    <button class="tab-more" id="tabMore" type="button" aria-haspopup="true" aria-expanded="false" onclick="toggleMore(event)">その他</button>
+    <button class="tab-btn" role="tab" id="tab-kana" aria-controls="page-kana" aria-selected="false" tabindex="-1" onclick="switchTab('kana')"><span class="t-en">Reading Check</span><span class="t-ja">読み確認</span></button>
+    <button class="tab-btn" role="tab" id="tab-reader" aria-controls="page-reader" aria-selected="false" tabindex="-1" onclick="switchTab('reader')"><span class="t-en">Reader</span><span class="t-ja">読み上げ</span></button>
+    <button class="tab-btn" role="tab" id="tab-backends" aria-controls="page-backends" aria-selected="false" tabindex="-1" onclick="switchTab('backends')"><span class="t-en">Backends</span><span class="t-ja">サーバー</span></button>
+    <button class="tab-btn" role="tab" id="tab-settings" aria-controls="page-settings" aria-selected="false" tabindex="-1" onclick="switchTab('settings')" style="margin-left:auto"><span class="t-en">Settings</span><span class="t-ja">設定</span></button>
   </nav>
 
   <!-- ============================
@@ -2155,17 +2159,18 @@ function setFontSize(v, save = true) {
   if (save) { try { localStorage.setItem(_LS_FS, v || ''); } catch {} }
 }
 try { setFontSize(localStorage.getItem(_LS_FS) || '', false); } catch { setFontSize('', false); }
-function toggleMore(e, force) {
+function toggleMenu(e, force) {
   if (e) e.stopPropagation();
-  const nav = document.querySelector('.tab-nav'), btn = document.getElementById('tabMore');
-  const open = force !== undefined ? force : !nav.classList.contains('more-open');
-  nav.classList.toggle('more-open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const nav = document.getElementById('tabNav'), btn = document.getElementById('menuBtn');
+  const open = force !== undefined ? force : !nav.classList.contains('menu-open');
+  nav.classList.toggle('menu-open', open);
+  document.body.classList.toggle('menu-locked', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) { const a = nav.querySelector('.tab-btn.active'); if (a) a.focus(); }
 }
-document.addEventListener('click', e => { if (!e.target.closest('.tab-sec, .tab-more')) toggleMore(null, false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleMenu(null, false); });
 function switchTab(tab) {
-  toggleMore(null, false);
-  const inSec = !!document.querySelector('#tabSec #tab-' + tab);
-  document.getElementById('tabMore').classList.toggle('active', inSec);
+  toggleMenu(null, false);
+  const cur = document.querySelector('#tab-' + tab + ' .t-ja'); if (cur) document.getElementById('menuCur').textContent = cur.textContent;
   document.querySelectorAll('.tab-btn').forEach(b => {
     const on = b.id === 'tab-' + tab;
     b.classList.toggle('active', on);
