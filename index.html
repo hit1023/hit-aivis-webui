@@ -2414,8 +2414,12 @@ async function hdrStatusRefresh() {
     el.lastChild.textContent = d.provider === 'aivis_cloud' ? 'AIVIS CLOUD'
       : `${up}/${act.length} ENGINES ONLINE` + (syncN ? ` · ${syncN} SYNCING` : '');
   } catch {
-    el.className = 'status-pill ng';
-    el.lastChild.textContent = 'OFFLINE';
+    // 稼働状況(/backends/status)が取れなくても、APIそのものが生きていれば OFFLINE とは言わない
+    let alive = false;
+    try { alive = (await apiFetch('/health')).ok; } catch {}
+    el.className = alive ? 'status-pill' : 'status-pill ng';
+    el.lastChild.textContent = alive ? 'API ONLINE · 状況取得不可' : 'OFFLINE';
+    el.title = alive ? '/backends/status を取得できませんでした（ルーターが古い、または経路で遮られている可能性）' : 'APIに接続できません';
   }
 }
 hdrStatusRefresh();
