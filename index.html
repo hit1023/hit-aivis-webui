@@ -409,6 +409,7 @@
   .btn-speak:active { transform: scale(0.99); }
   .btn-speak:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-speak .btn-text { position: relative; z-index: 1; }
+  .btn-speak .btn-ico { display:none; }
 
   .btn-speak.loading::after {
     content: '';
@@ -1292,9 +1293,15 @@
     textarea, select, input { line-height:1.5; }
     #textInput { min-height:9rem; }
 
-    /* 生成ボタンを画面幅いっぱいの大きなボタンに */
-    .text-foot { display:flex; flex-direction:column; align-items:stretch; gap:.7rem; }
-    .btn-speak, #page-tts .btn-speak { width:100%; padding:1.05rem 1rem; font-size:1.25rem; border-radius:14px; }
+    /* 生成ボタン: 文字ではなくスピーカーのアイコンにして、テキスト欄の右横へ置く（場所を取らない） */
+    #textCard { display:grid; grid-template-columns:minmax(0,1fr) 64px; column-gap:.7rem; row-gap:.4rem; align-items:end; }
+    #textCard > .card-title, #textCard > .status { grid-column:1 / -1; }
+    #textCard > textarea { grid-column:1; min-height:6.5rem; height:6.5rem !important; }
+    #textCard .text-foot { display:contents; }
+    #textCard .char-count { grid-column:1; grid-row:3; margin:0 !important; justify-self:start; }
+    #textCard .btn-speak { grid-column:2; grid-row:2; width:64px; height:64px; padding:0 !important; border-radius:16px; display:flex; align-items:center; justify-content:center; }
+    #textCard .btn-speak .btn-text { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }  /* 画面には出さず読み上げ用に残す */
+    #textCard .btn-speak .btn-ico { display:block; }
     .speak-hint { display:none; }
     #audioPlayer { width:100%; height:56px; }
 
@@ -1371,13 +1378,14 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="textCard">
       <div class="card-title">Text</div>
       <textarea id="textInput" placeholder="読み上げるテキストを入力してください..." maxlength="500"></textarea>
       <div class="text-foot">
         <div class="char-count"><span id="charCount">0</span> / 500</div>
         <span class="speak-hint">Ctrl / &#8984; + Enter</span>
-        <button class="btn-speak" id="speakBtn" onclick="speak()">
+        <button class="btn-speak" id="speakBtn" onclick="speak()" aria-label="音声を生成">
+          <svg class="btn-ico" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
           <span class="btn-text">Generate</span>
         </button>
       </div>
@@ -2158,7 +2166,7 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-04 r10';
+const UI_VERSION = '2026-11-04 r11';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
