@@ -2157,7 +2157,7 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-04 r8';
+const UI_VERSION = '2026-11-04 r9';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
@@ -2428,7 +2428,9 @@ async function hdrStatusRefresh() {
     let alive = false;
     try { alive = (await apiFetch('/health')).ok; } catch {}
     el.className = alive ? 'status-pill' : 'status-pill ng';
-    el.lastChild.textContent = alive ? `API ONLINE · 状況取得不可 (${why})` : `OFFLINE (${why})`;
+    const outside = alive && why === 'HTTP 403';   // 外部経由では /backends を公開側で止めている（想定どおり）
+    el.lastChild.textContent = outside ? 'API ONLINE · 外部経由'
+      : alive ? `API ONLINE · 状況取得不可 (${why})` : `OFFLINE (${why})`;
     el.title = alive ? '/backends/status を取得できませんでした（ルーターが古い、または経路で遮られている可能性）' : 'APIに接続できません';
   }
 }
