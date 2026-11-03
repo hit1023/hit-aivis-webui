@@ -1215,6 +1215,9 @@
   .input:focus, input[type="url"]:focus, input[type="password"]:focus { outline:none; border-color:var(--accent); }
   input.dict-search { padding-left:2.2rem; }
 
+  .ui-ver { font-family:'JetBrains Mono',monospace; font-size:.68rem; color:var(--text-muted); letter-spacing:.06em; }
+  @media (max-width:600px) { .ui-ver { font-size:.85rem !important; } }
+
   /* ===== キーボードフォーカス（Tab 移動時だけリングを出す） ===== */
   :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
   .input:focus-visible, select:focus-visible, textarea:focus-visible, input[type="text"]:focus-visible,
@@ -1334,6 +1337,7 @@
     <div class="sub-row">
       <span class="subtitle">TEXT-TO-SPEECH · POWERED BY AIVISSPEECH ENGINE</span>
       <span class="status-pill" id="hdrStatus"><i></i><span>CONNECTING</span></span>
+      <span class="ui-ver" id="uiVer"></span>
     </div>
   </header>
 
@@ -2152,6 +2156,9 @@ function tabKeydown(e) {
   e.preventDefault(); btns[i].focus(); btns[i].click();
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
+// 画面の版（反映されたか目で確認するため。push のたびに更新する）
+const UI_VERSION = '2026-11-03 r7';
+document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
   if (v) document.documentElement.dataset.fs = v; else delete document.documentElement.dataset.fs;
