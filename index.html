@@ -2157,7 +2157,7 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-03 r7';
+const UI_VERSION = '2026-11-04 r8';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
@@ -2412,20 +2412,23 @@ async function hdrStatusRefresh() {
   if (!el) return;
   try {
     const res = await apiFetch('/backends/status');
-    if (!res.ok) throw new Error();
-    const d = await res.json();
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    let d; try { d = await res.json(); } catch { throw new Error('JSONではない応答'); }
+    if (!d || !Array.isArray(d.backends)) throw new Error('想定外の応答');
     const act = d.backends.filter(b => (b.state || 'active') === 'active');
     const up = act.filter(b => b.ok).length;
     const syncN = d.backends.filter(b => b.state === 'syncing').length;
     el.className = 'status-pill ' + (up === act.length ? 'ok' : 'ng');
     el.lastChild.textContent = d.provider === 'aivis_cloud' ? 'AIVIS CLOUD'
       : `${up}/${act.length} ENGINES ONLINE` + (syncN ? ` · ${syncN} SYNCING` : '');
-  } catch {
+  } catch (e) {
+    // 失敗の理由(通信エラーは TypeError=端末↔APIの経路で切れた)を短く表示して切り分けやすくする
+    const why = e && e.name === 'TypeError' ? '通信エラー' : (e && e.message) || '不明';
     // 稼働状況(/backends/status)が取れなくても、APIそのものが生きていれば OFFLINE とは言わない
     let alive = false;
     try { alive = (await apiFetch('/health')).ok; } catch {}
     el.className = alive ? 'status-pill' : 'status-pill ng';
-    el.lastChild.textContent = alive ? 'API ONLINE · 状況取得不可' : 'OFFLINE';
+    el.lastChild.textContent = alive ? `API ONLINE · 状況取得不可 (${why})` : `OFFLINE (${why})`;
     el.title = alive ? '/backends/status を取得できませんでした（ルーターが古い、または経路で遮られている可能性）' : 'APIに接続できません';
   }
 }
