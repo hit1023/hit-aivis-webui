@@ -1296,10 +1296,10 @@
     /* 生成ボタン: 文字ではなくスピーカーのアイコンにして、テキスト欄の右横へ置く（場所を取らない） */
     #textCard { display:grid; grid-template-columns:minmax(0,1fr) 64px; column-gap:.7rem; row-gap:.4rem; align-items:end; }
     #textCard > .card-title, #textCard > .status { grid-column:1 / -1; }
-    #textCard > textarea { grid-column:1; min-height:6.5rem; height:6.5rem !important; }
+    #textCard > textarea { grid-column:1; min-height:5.5rem; height:5.5rem !important; align-self:stretch; }
     #textCard .text-foot { display:contents; }
     #textCard .char-count { grid-column:1; grid-row:3; margin:0 !important; justify-self:start; }
-    #textCard .btn-speak { grid-column:2; grid-row:2; width:64px; height:64px; padding:0 !important; border-radius:16px; display:flex; align-items:center; justify-content:center; }
+    #textCard .btn-speak { grid-column:2; grid-row:2; width:64px; height:auto; align-self:stretch; min-height:5.5rem; padding:0 !important; border-radius:16px; display:flex; align-items:center; justify-content:center; }
     #textCard .btn-speak .btn-text { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }  /* 画面には出さず読み上げ用に残す */
     #textCard .btn-speak .btn-ico { display:block; }
     .speak-hint { display:none; }
@@ -2166,7 +2166,7 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-04 r11';
+const UI_VERSION = '2026-11-04 r12';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
