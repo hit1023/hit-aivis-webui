@@ -1257,7 +1257,8 @@
     .btn-primary, .btn-ghost, .btn-danger { min-height:44px; }
     .btn-ghost, .btn-danger { white-space:normal; }
     .word-row .btn-ghost, .word-row .btn-danger, .word-row button { min-height:36px; }
-    input[type="text"], input[type="number"], input[type="url"], input[type="password"], .input, select, textarea { font-size:16px; } /* iOS の自動ズーム防止 */
+    /* iOS は 16px 未満の入力欄にフォーカスすると画面を拡大して戻らなくなる。#page-xxx の指定に勝つため !important */
+    input[type="text"], input[type="number"], input[type="url"], input[type="password"], input[type="search"], .input, select, textarea { font-size:16px !important; }
     .word-row-main { flex-wrap:wrap; gap:.4rem .8rem; padding:.7rem .85rem; }
     .word-reading { flex-basis:100%; order:3; }
     .word-meta { flex-wrap:wrap; }
@@ -2977,6 +2978,7 @@ function eqEnsureGraph() {
   const an = ctx.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0.8;
   node.connect(an); an.connect(ctx.destination);
   _eq.ctx = ctx; _eq.analyser = an;
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   eqApply(); eqDraw();
 }
 function eqDraw() {
@@ -3081,7 +3083,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// iOS Safari は、ユーザー操作の中で一度も再生していない <audio> の play() を拒否する。
+// 生成は await の後に再生するため操作の外になり、自動再生されない。→ ボタンを押した瞬間に無音を再生して解錠しておく。
+const _SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+function unlockAudio() {
+  try {
+    const a = document.getElementById('audioPlayer');
+    eqEnsureGraph();                       // AudioContext もユーザー操作中に作って resume
+    if (a.paused && !a.src) { a.src = _SILENT_WAV; const p = a.play(); if (p) p.catch(() => {}); }
+  } catch {}
+}
 async function speak() {
+  unlockAudio();
   const text = document.getElementById('textInput').value.trim();
   const speakerId = parseInt(document.getElementById('speakerSelect').value);
   const btn = document.getElementById('speakBtn');
@@ -3132,7 +3145,9 @@ async function speak() {
       const next = queue.shift();
       if (!next) { playingNow = false; bars.forEach(b => b.classList.remove('playing')); return; }
       playingNow = true;
-      audio.src = next; audio.play();
+      audio.src = next;
+      const pr = audio.play();
+      if (pr) pr.catch(() => showTtsStatus('自動再生がブロックされました。プレイヤーの再生ボタンを押してください', 'error'));
     };
     audio.onplay  = () => bars.forEach(b => b.classList.add('playing'));
     audio.onpause = () => { if (!playingNow) bars.forEach(b => b.classList.remove('playing')); };
