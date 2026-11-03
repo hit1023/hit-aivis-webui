@@ -1247,13 +1247,12 @@
     .card { padding: 1.1rem; margin-bottom: .9rem; border-radius: 14px; }
     header { margin-bottom: .8rem; }
     .subtitle { font-size:.62rem; letter-spacing:.04em; }
-    /* タブ: 折り返さず1段の横スクロール。右端に薄いフェードで「続きがある」ことを示す */
-    .tab-nav { flex-wrap:nowrap; overflow-x:auto; gap:0; scroll-snap-type:x proximity; scrollbar-width:none;
-      -webkit-overflow-scrolling:touch; margin-left:-1rem; margin-right:-1rem; padding:0 1rem;
-      -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent); mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent); }
-    .tab-nav::-webkit-scrollbar { display:none; }
-    .tab-btn { padding:.7rem .75rem; scroll-snap-align:center; min-height:44px; }
-    .tab-btn[style*="margin-left:auto"] { margin-left:0 !important; }
+    /* タブ: 4列×2段の同サイズ・グリッド。全部が一度に見え、位置も毎回同じ */
+    .tab-nav { display:grid; grid-template-columns:repeat(4,1fr); gap:.35rem; overflow:visible; border-bottom:none; margin-bottom:1rem; }
+    .tab-btn { margin:0 !important; min-height:44px; padding:.45rem .2rem; font-size:.62rem !important; letter-spacing:.06em !important;
+      white-space:normal; line-height:1.25; text-align:center; display:flex; align-items:center; justify-content:center;
+      background:var(--surface); border:1px solid var(--border) !important; border-radius:10px; }
+    .tab-btn.active { background:rgba(79,142,255,.14); border-color:var(--accent) !important; color:var(--accent); }
     .btn-primary, .btn-ghost, .btn-danger { min-height:44px; }
     .btn-ghost, .btn-danger { white-space:normal; }
     .word-row .btn-ghost, .word-row .btn-danger, .word-row button { min-height:36px; }
