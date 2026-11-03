@@ -1283,7 +1283,8 @@
     html[data-fs="l"]  { font-size:20px; }
     html[data-fs="xl"] { font-size:22px; }
     body { line-height:1.65; }
-    h1 { font-size:1.6rem; }
+    h1 { font-size:1.4rem; }
+    html[data-fs] .w2 { display:none; }   /* 文字を大きくしたときは STUDIO を省いてボタンが同じ行に収まるように */
     /* 小さすぎた補助文字を底上げ */
     .card-title, .eq-title, .label, label, .status-pill, .subtitle, .char-count, .api-indicator,
     .fold-sum, .word-reading, .field-hint, .status, .hint, small { font-size:.85rem !important; letter-spacing:.04em; }
@@ -1308,10 +1309,14 @@
     /* ハンバーガーメニュー: 右上のボタンで全画面の大きなメニューを開く */
     header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem; }
     header .sub-row { flex-basis:100%; }
-    .menu-btn { display:inline-flex; align-items:center; gap:.6rem; min-height:52px; padding:.5rem .9rem; border-radius:12px; cursor:pointer;
-      background:var(--surface2); border:1px solid var(--accent); color:#fff; font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size:1rem; }
+    /* タイトル行の右端に置く。アイコンの下に今のページ名を小さく添える */
+    header .logo { flex:1 1 auto; min-width:0; margin-bottom:0; }
+    .menu-btn { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:.3rem; flex:none; margin-left:auto;
+      min-width:64px; min-height:60px; padding:.5rem .6rem; border-radius:12px; cursor:pointer;
+      background:var(--surface2); border:1px solid var(--accent); color:#fff; font-family:'Noto Sans JP',sans-serif; font-weight:700; }
+    .mb-cur { font-size:.72rem; line-height:1; white-space:nowrap; }
     .mb-bars, .mb-bars::before, .mb-bars::after { display:block; width:22px; height:3px; border-radius:2px; background:#fff; }
-    .mb-bars { position:relative; } .mb-bars::before, .mb-bars::after { content:''; position:absolute; left:0; }
+    .mb-bars { position:relative; margin:7px 0; } .mb-bars::before, .mb-bars::after { content:''; position:absolute; left:0; }
     .mb-bars::before { top:-7px; } .mb-bars::after { top:7px; }
     .menu-close { display:flex !important; align-items:center; justify-content:center; gap:.5rem; min-height:56px; flex-shrink:0; border-radius:14px; cursor:pointer;
       background:var(--surface2); border:1px solid var(--accent); color:#fff; font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size:1.1rem; }
@@ -2166,7 +2171,7 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-04 r12';
+const UI_VERSION = '2026-11-04 r14';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
