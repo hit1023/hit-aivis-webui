@@ -1289,6 +1289,7 @@
     .card-title, .eq-title, .label, label, .status-pill, .subtitle, .char-count, .api-indicator,
     .fold-sum, .word-reading, .field-hint, .status, .hint, small { font-size:.85rem !important; letter-spacing:.04em; }
     .subtitle { display:none; }
+    #hdrStatus { display:none; }   /* スマホでは稼働ステータスは出さない（PCは表示） */
     .card-title { font-size:.95rem !important; }
     button, .btn-primary, .btn-ghost, .btn-danger { font-size:1rem; }
     textarea, select, input { line-height:1.5; }
@@ -2171,7 +2172,7 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-04 r14';
+const UI_VERSION = '2026-11-04 r15';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
