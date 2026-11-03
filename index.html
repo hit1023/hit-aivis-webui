@@ -484,6 +484,9 @@
   .fold.closed .eq-head { margin-bottom:0; }
   .fold-head:hover .fold-chev { border-color:var(--accent); }
   .play-head, .accent-head { display:flex; align-items:center; margin-bottom:.6rem; }
+  /* #page-tts の個別指定(ID)に負けて、見出しの下余白が残り矢印が下にずれていた */
+  #page-tts .fold-head > .card-title, #page-tts .fold-head > .eq-title { margin-bottom:0; }
+  #page-tts .fold.closed .fold-head { margin-bottom:0; }
 
 
   /* ---- 画面に収まるよう全体を詰める ---- */
@@ -2184,7 +2187,7 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-04 r16';
+const UI_VERSION = '2026-11-04 r17';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
