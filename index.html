@@ -12,8 +12,8 @@
     --surface: #131110;
     --surface2: #1b1816;
     --border: #3a322a;
-    --brand1: #ffa63d;          /* ロゴ・タイトル用（タブで変わらない） */
-    --brand2: #ff5a36;
+    --brand1: #f6f0e6;          /* ロゴ・タイトル用（クリーム。タブ色とは別） */
+    --brand2: #b8aa92;
     --accent: #ffa63d;          /* 現在のタブの色（html[data-tab]で上書き） */
     --accent2: #ff5a36;
     --accent-rgb: 255,166,61;
@@ -78,7 +78,7 @@
       linear-gradient(135deg, var(--brand1), var(--brand2)) border-box;
     border: 1.5px solid transparent;
     display: flex; align-items: center; justify-content: center; gap: 3.5px;
-    box-shadow: 0 0 22px rgba(255,90,54,.26), inset 0 0 14px rgba(255,166,61,.12);
+    box-shadow: 0 0 22px rgba(246,240,230,.10), inset 0 0 14px rgba(246,240,230,.06);
   }
   .logo-icon i {
     width: 3.5px; border-radius: 3px;
@@ -106,7 +106,7 @@
   h1 .w1 {
     background: linear-gradient(100deg, var(--brand1), var(--brand2) 70%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    filter: drop-shadow(0 0 14px rgba(255,90,54,.35));
+    filter: drop-shadow(0 0 14px rgba(246,240,230,.22));
   }
   h1 .w2 { font-weight: 400; color: var(--text); letter-spacing: .32em; font-size: .62em; opacity: .85; }
 
