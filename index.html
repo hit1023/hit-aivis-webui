@@ -1,24 +1,37 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-tab="tts">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AivisSpeech Studio</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234f8eff'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='12' y='5' width='8' height='13' rx='4' fill='white'/%3E%3Cpath d='M8 15 Q8 23 16 23 Q24 23 24 15' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cline x1='16' y1='23' x2='16' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3Cline x1='11' y1='27' x2='21' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ffa63d'/%3E%3Cstop offset='100%25' stop-color='%23ff5a36'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='12' y='5' width='8' height='13' rx='4' fill='white'/%3E%3Cpath d='M8 15 Q8 23 16 23 Q24 23 24 15' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cline x1='16' y1='23' x2='16' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3Cline x1='11' y1='27' x2='21' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #080b14;
-    --surface: #0d1120;
-    --surface2: #131929;
-    --border: #1e2d4a;
-    --accent: #4f8eff;
-    --accent2: #a855f7;
-    --text: #e8edf8;
-    --text-muted: #5a6a8a;
-    --success: #22d3a0;
-    --error: #ff4f6a;
+    --bg: #0b0a09;
+    --surface: #131110;
+    --surface2: #1b1816;
+    --border: #3a322a;
+    --brand1: #ffa63d;          /* ロゴ・タイトル用（タブで変わらない） */
+    --brand2: #ff5a36;
+    --accent: #ffa63d;          /* 現在のタブの色（html[data-tab]で上書き） */
+    --accent2: #ff5a36;
+    --accent-rgb: 255,166,61;
+    --accent2-rgb: 255,90,54;
+    --on-accent: #17110a;       /* アクセント地の上の文字色 */
+    --text: #f1ece4;
+    --text-muted: #8c8173;
+    --success: #6fdc8c;
+    --error: #ff3d71;
   }
+  /* タブごとにアクセント色を変える（線・表・ボタンが追従）。やめたい場合はこのブロックを消すだけ */
+  html[data-tab="dict"] { --accent: #6fdc8c; --accent2: #2fb8a0; --accent-rgb: 111,220,140; --accent2-rgb: 47,184,160; }
+  html[data-tab="replacer"] { --accent: #3fd0e0; --accent2: #7fe0c8; --accent-rgb: 63,208,224; --accent2-rgb: 127,224,200; }
+  html[data-tab="history"] { --accent: #f0d060; --accent2: #f09a40; --accent-rgb: 240,208,96; --accent2-rgb: 240,154,64; }
+  html[data-tab="kana"] { --accent: #ff7fa5; --accent2: #ff5a7a; --accent-rgb: 255,127,165; --accent2-rgb: 255,90,122; }
+  html[data-tab="reader"] { --accent: #ff6b57; --accent2: #ffa63d; --accent-rgb: 255,107,87; --accent2-rgb: 255,166,61; }
+  html[data-tab="backends"] { --accent: #b8e04a; --accent2: #5fd68a; --accent-rgb: 184,224,74; --accent2-rgb: 95,214,138; }
+  html[data-tab="settings"] { --accent: #d0c4b0; --accent2: #8c8173; --accent-rgb: 208,196,176; --accent2-rgb: 140,129,115; }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -35,8 +48,8 @@
     position: fixed;
     inset: 0;
     background-image:
-      linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px);
+      linear-gradient(rgba(var(--accent-rgb),0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(var(--accent-rgb),0.03) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
@@ -62,14 +75,14 @@
     border-radius: 15px;
     background:
       linear-gradient(var(--surface), var(--surface)) padding-box,
-      linear-gradient(135deg, var(--accent), var(--accent2)) border-box;
+      linear-gradient(135deg, var(--brand1), var(--brand2)) border-box;
     border: 1.5px solid transparent;
     display: flex; align-items: center; justify-content: center; gap: 3.5px;
-    box-shadow: 0 0 22px rgba(124,92,255,.28), inset 0 0 14px rgba(79,140,255,.12);
+    box-shadow: 0 0 22px rgba(255,90,54,.26), inset 0 0 14px rgba(255,166,61,.12);
   }
   .logo-icon i {
     width: 3.5px; border-radius: 3px;
-    background: linear-gradient(180deg, var(--accent), var(--accent2));
+    background: linear-gradient(180deg, var(--brand1), var(--brand2));
     height: 14px; transform-origin: center;
     animation: wave 1.6s ease-in-out infinite;
   }
@@ -91,9 +104,9 @@
     display: flex; align-items: baseline; gap: .55em;
   }
   h1 .w1 {
-    background: linear-gradient(100deg, var(--accent), var(--accent2) 70%);
+    background: linear-gradient(100deg, var(--brand1), var(--brand2) 70%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    filter: drop-shadow(0 0 14px rgba(124,92,255,.35));
+    filter: drop-shadow(0 0 14px rgba(255,90,54,.35));
   }
   h1 .w2 { font-weight: 400; color: var(--text); letter-spacing: .32em; font-size: .62em; opacity: .85; }
 
@@ -314,8 +327,8 @@
      旧パラメータ変換
      ======================== */
   .legacy-convert {
-    background: rgba(79,142,255,0.04);
-    border: 1px dashed rgba(79,142,255,0.2);
+    background: rgba(var(--accent-rgb),0.04);
+    border: 1px dashed rgba(var(--accent-rgb),0.2);
     border-radius: 10px;
     padding: 0.75rem 1rem;
     margin-bottom: 1rem;
@@ -348,8 +361,8 @@
   .legacy-input:focus { border-color: var(--accent); }
   .legacy-input::placeholder { color: var(--text-muted); opacity: 0.5; }
   .legacy-convert-btn {
-    background: rgba(79,142,255,0.15);
-    border: 1px solid rgba(79,142,255,0.35);
+    background: rgba(var(--accent-rgb),0.15);
+    border: 1px solid rgba(var(--accent-rgb),0.35);
     border-radius: 7px;
     color: var(--accent);
     font-size: 0.75rem;
@@ -358,7 +371,7 @@
     white-space: nowrap;
     transition: background 0.2s;
   }
-  .legacy-convert-btn:hover { background: rgba(79,142,255,0.25); }
+  .legacy-convert-btn:hover { background: rgba(var(--accent-rgb),0.25); }
   .convert-note {
     margin-top: 0.5rem;
     font-size: 0.7rem;
@@ -385,7 +398,7 @@
     border-radius: 50%;
     background: var(--accent);
     cursor: pointer;
-    box-shadow: 0 0 8px rgba(79,142,255,0.5);
+    box-shadow: 0 0 8px rgba(var(--accent-rgb),0.5);
   }
 
   /* Buttons */
@@ -395,7 +408,7 @@
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     border: none;
     border-radius: 12px;
-    color: #fff;
+    color: var(--on-accent);
     font-family: 'Syne', sans-serif;
     font-size: 1rem;
     font-weight: 600;
@@ -424,7 +437,7 @@
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     border: none;
     border-radius: 10px;
-    color: #fff;
+    color: var(--on-accent);
     font-family: 'Syne', sans-serif;
     font-size: 0.85rem;
     font-weight: 600;
@@ -454,7 +467,7 @@
   .btn-danger {
     padding: 0.4rem 0.8rem;
     background: none;
-    border: 1px solid rgba(255,79,106,0.3);
+    border: 1px solid rgba(255,61,113,0.3);
     border-radius: 6px;
     color: var(--error);
     font-size: 0.75rem;
@@ -463,7 +476,7 @@
     white-space: nowrap;
   }
 
-  .btn-danger:hover { background: rgba(255,79,106,0.1); border-color: var(--error); }
+  .btn-danger:hover { background: rgba(255,61,113,0.1); border-color: var(--error); }
   .btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* Audio */
@@ -623,15 +636,15 @@
 
   .status.error {
     display: block;
-    background: rgba(255,79,106,0.1);
-    border: 1px solid rgba(255,79,106,0.3);
+    background: rgba(255,61,113,0.1);
+    border: 1px solid rgba(255,61,113,0.3);
     color: var(--error);
   }
 
   .status.success {
     display: block;
-    background: rgba(34,211,160,0.1);
-    border: 1px solid rgba(34,211,160,0.3);
+    background: rgba(111,220,140,0.1);
+    border: 1px solid rgba(111,220,140,0.3);
     color: var(--success);
   }
 
@@ -674,7 +687,7 @@
     transition: border-color 0.2s;
   }
 
-  .model-row.loaded { border-color: rgba(34,211,160,0.25); }
+  .model-row.loaded { border-color: rgba(111,220,140,0.25); }
   .model-info { display: flex; flex-direction: column; gap: 0.2rem; }
   .model-name { font-size: 0.9rem; font-weight: 500; color: var(--text); }
   .model-backend { font-size: 0.72rem; color: var(--text-muted); }
@@ -692,8 +705,8 @@
     white-space: nowrap;
   }
 
-  .vram-badge.on { background: rgba(34,211,160,0.12); color: var(--success); border: 1px solid rgba(34,211,160,0.3); }
-  .vram-badge.off { background: rgba(90,106,138,0.12); color: var(--text-muted); border: 1px solid var(--border); }
+  .vram-badge.on { background: rgba(111,220,140,0.12); color: var(--success); border: 1px solid rgba(111,220,140,0.3); }
+  .vram-badge.off { background: rgba(140,129,115,0.12); color: var(--text-muted); border: 1px solid var(--border); }
 
   .vram-badge.part { background: rgba(245,185,74,0.12); color: #f5b94a; border: 1px solid rgba(245,185,74,0.3); }
   .vram-badge.part .badge-dot { background: #f5b94a; }
@@ -708,7 +721,7 @@
 
   .unload-btn {
     background: none;
-    border: 1px solid rgba(255,79,106,0.3);
+    border: 1px solid rgba(255,61,113,0.3);
     border-radius: 6px;
     color: var(--error);
     font-size: 0.72rem;
@@ -719,14 +732,14 @@
     white-space: nowrap;
   }
 
-  .unload-btn:hover { background: rgba(255,79,106,0.1); border-color: var(--error); }
+  .unload-btn:hover { background: rgba(255,61,113,0.1); border-color: var(--error); }
   .unload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .uninstall-btn {
     background: none;
-    border: 1px solid rgba(255,79,106,0.2);
+    border: 1px solid rgba(255,61,113,0.2);
     border-radius: 6px;
-    color: rgba(255,79,106,0.6);
+    color: rgba(255,61,113,0.6);
     font-size: 0.72rem;
     padding: 0.25rem 0.6rem;
     cursor: pointer;
@@ -734,7 +747,7 @@
     margin-left: 0.25rem;
     white-space: nowrap;
   }
-  .uninstall-btn:hover { background: rgba(255,79,106,0.08); border-color: var(--error); color: var(--error); }
+  .uninstall-btn:hover { background: rgba(255,61,113,0.08); border-color: var(--error); color: var(--error); }
   .uninstall-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .model-styles { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
@@ -761,7 +774,7 @@
   }
   .upload-zone:hover, .upload-zone.dragover {
     border-color: var(--accent);
-    background: rgba(79,142,255,0.05);
+    background: rgba(var(--accent-rgb),0.05);
   }
   .upload-zone input[type=file] {
     position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
@@ -776,7 +789,7 @@
   .upload-actions { margin-top: 1rem; display: flex; gap: 0.6rem; justify-content: center; }
   .upload-btn {
     background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border: none; border-radius: 8px; color: #fff;
+    border: none; border-radius: 8px; color: var(--on-accent);
     font-size: 0.85rem; font-weight: 600; padding: 0.5rem 1.4rem;
     cursor: pointer; transition: opacity 0.2s;
   }
@@ -812,8 +825,8 @@
     gap: 0.35rem;
     font-size: 0.72rem;
     color: var(--success);
-    background: rgba(34,211,160,0.1);
-    border: 1px solid rgba(34,211,160,0.3);
+    background: rgba(111,220,140,0.1);
+    border: 1px solid rgba(111,220,140,0.3);
     border-radius: 20px;
     padding: 0.2rem 0.7rem;
     animation: fadeUp 0.3s ease both;
@@ -831,7 +844,7 @@
   .preset-save-btn {
     flex: 1;
     background: none;
-    border: 1px solid rgba(79,142,255,0.35);
+    border: 1px solid rgba(var(--accent-rgb),0.35);
     border-radius: 8px;
     color: var(--accent);
     font-size: 0.78rem;
@@ -840,12 +853,12 @@
     transition: background 0.2s, border-color 0.2s;
     text-align: center;
   }
-  .preset-save-btn:hover { background: rgba(79,142,255,0.08); border-color: var(--accent); }
+  .preset-save-btn:hover { background: rgba(var(--accent-rgb),0.08); border-color: var(--accent); }
   .preset-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .preset-update-btn {
     flex: 1;
     background: none;
-    border: 1px solid rgba(34,211,160,0.35);
+    border: 1px solid rgba(111,220,140,0.35);
     border-radius: 8px;
     color: var(--success);
     font-size: 0.78rem;
@@ -854,20 +867,20 @@
     transition: background 0.2s, border-color 0.2s;
     text-align: center;
   }
-  .preset-update-btn:hover { background: rgba(34,211,160,0.08); border-color: var(--success); }
+  .preset-update-btn:hover { background: rgba(111,220,140,0.08); border-color: var(--success); }
   .preset-update-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .preset-del-btn {
     background: none;
-    border: 1px solid rgba(255,79,106,0.25);
+    border: 1px solid rgba(255,61,113,0.25);
     border-radius: 8px;
-    color: rgba(255,79,106,0.7);
+    color: rgba(255,61,113,0.7);
     font-size: 0.78rem;
     padding: 0.4rem 0.7rem;
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s, color 0.2s;
     white-space: nowrap;
   }
-  .preset-del-btn:hover { background: rgba(255,79,106,0.08); border-color: var(--error); color: var(--error); }
+  .preset-del-btn:hover { background: rgba(255,61,113,0.08); border-color: var(--error); color: var(--error); }
 
   /* ========================
      単語辞書
@@ -910,7 +923,7 @@
     transition: border-color 0.2s;
   }
 
-  .word-row:hover { border-color: rgba(79,142,255,0.25); }
+  .word-row:hover { border-color: rgba(var(--accent-rgb),0.25); }
 
   .word-row-main { display: flex; align-items: center; padding: 0.8rem 1rem; gap: 1rem; }
 
@@ -924,8 +937,8 @@
     font-size: 0.7rem;
     padding: 0.2rem 0.6rem;
     border-radius: 20px;
-    background: rgba(79,142,255,0.1);
-    border: 1px solid rgba(79,142,255,0.2);
+    background: rgba(var(--accent-rgb),0.1);
+    border: 1px solid rgba(var(--accent-rgb),0.2);
     color: var(--accent);
     white-space: nowrap;
   }
@@ -959,18 +972,18 @@
     transition: border-color 0.2s, color 0.2s;
     white-space: nowrap;
   }
-  .btn-play:hover { border-color: #22c55e; color: #22c55e; }
+  .btn-play:hover { border-color: #6fdc8c; color: #6fdc8c; }
   .btn-play:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .word-edit-form {
     display: none;
     padding: 1rem;
     border-top: 1px solid var(--border);
-    background: rgba(79,142,255,0.04);
+    background: rgba(var(--accent-rgb),0.04);
   }
 
   .word-row.editing .word-edit-form { display: block; }
-  .word-row.editing { border-color: rgba(79,142,255,0.4); }
+  .word-row.editing { border-color: rgba(var(--accent-rgb),0.4); }
 
   .edit-grid {
     display: grid;
@@ -1041,8 +1054,8 @@
   .accent-viz-desc {
     font-size: 0.7rem;
     color: var(--accent);
-    background: rgba(79,142,255,0.1);
-    border: 1px solid rgba(79,142,255,0.2);
+    background: rgba(var(--accent-rgb),0.1);
+    border: 1px solid rgba(var(--accent-rgb),0.2);
     border-radius: 20px;
     padding: 0.15rem 0.65rem;
   }
@@ -1064,7 +1077,7 @@
     border-radius: 50%;
     background: var(--accent);
     cursor: pointer;
-    box-shadow: 0 0 10px rgba(79,142,255,0.6);
+    box-shadow: 0 0 10px rgba(var(--accent-rgb),0.6);
   }
 
   .accent-range::-moz-range-thumb {
@@ -1073,7 +1086,7 @@
     background: var(--accent);
     cursor: pointer;
     border: none;
-    box-shadow: 0 0 10px rgba(79,142,255,0.6);
+    box-shadow: 0 0 10px rgba(var(--accent-rgb),0.6);
   }
 
   .accent-svg-scroll { overflow-x: auto; overflow-y: hidden; }
@@ -1161,7 +1174,7 @@
   /* APIサンプル */
   .api-preview {
     margin-top: 1rem;
-    background: #0a0f1e;
+    background: #0e0c0b;
     border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
@@ -1243,7 +1256,7 @@
   @media (max-width:600px) { #toastHost { left:1rem; right:1rem; max-width:none; bottom:calc(1rem + env(safe-area-inset-bottom)); } }
 
   /* ===== 確認モーダル ===== */
-  .modal-backdrop { position:fixed; inset:0; z-index:1100; background:rgba(3,5,12,.72); display:flex; align-items:center; justify-content:center; padding:1rem; animation:toastIn .15s ease both; }
+  .modal-backdrop { position:fixed; inset:0; z-index:1100; background:rgba(5,4,3,.72); display:flex; align-items:center; justify-content:center; padding:1rem; animation:toastIn .15s ease both; }
   .modal { width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.4rem; box-shadow:0 20px 60px rgba(0,0,0,.6); }
   .modal-msg { white-space:pre-line; font-size:.92rem; line-height:1.7; color:var(--text); margin-bottom:1.2rem; }
   .modal-actions { display:flex; gap:.6rem; justify-content:flex-end; flex-wrap:wrap; }
@@ -1280,8 +1293,8 @@
 
   /* ===== スマホ専用レイアウト（老眼向け: 大きな文字 + 下固定のタブバー） ===== */
   @media (max-width: 600px) {
-    :root { --text-muted:#cdd7ee; --text-dim:#e2e8f6; --border:#33466f; }
-    ::placeholder { color:#aab8d6 !important; opacity:1; }
+    :root { --text-muted:#e0d6c6; --text-dim:#f1ece4; --border:#6b5d4b; }
+    ::placeholder { color:#bfb3a1 !important; opacity:1; }
     html { font-size:18px; }
     html[data-fs="l"]  { font-size:20px; }
     html[data-fs="xl"] { font-size:22px; }
@@ -1338,19 +1351,19 @@
       background:var(--surface2); border:1px solid var(--accent); color:#fff; font-family:'Noto Sans JP',sans-serif; font-weight:700; font-size:1.1rem; }
     .t-en { display:none; } .t-ja { display:inline; }
     .tab-nav { position:fixed; inset:0; z-index:900; display:none; flex-direction:column; flex-wrap:nowrap; gap:.6rem; margin:0; border:none; overflow-y:auto;
-      padding:1rem 1rem calc(1.5rem + env(safe-area-inset-bottom)); background:#080b14; -webkit-mask-image:none; mask-image:none; }
+      padding:1rem 1rem calc(1.5rem + env(safe-area-inset-bottom)); background:var(--bg); -webkit-mask-image:none; mask-image:none; }
     .tab-nav.menu-open { display:flex; }
     body.menu-locked { overflow:hidden; }
     .tab-btn { font-family:'Noto Sans JP',sans-serif !important; text-transform:none !important; letter-spacing:.02em !important; font-weight:700;
       font-size:1.2rem !important; min-height:64px; margin:0 !important; padding:.6rem 1.1rem; color:var(--text);
       background:var(--surface); border:1px solid var(--border) !important; border-radius:14px; display:flex; align-items:center; justify-content:flex-start; text-align:left; cursor:pointer; flex-shrink:0; }
-    .tab-btn.active { background:rgba(79,142,255,.2); border-color:var(--accent) !important; color:#fff; }
+    .tab-btn.active { background:rgba(var(--accent-rgb),.2); border-color:var(--accent) !important; color:#fff; }
   }
 
   /* 文字サイズ切替ボタン（設定タブ） */
   .fs-seg { display:flex; gap:.4rem; margin:.5rem 0 .4rem; }
   .fs-seg button { flex:1; padding:.7rem .3rem; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--text); cursor:pointer; min-height:44px; }
-  .fs-seg button[aria-pressed="true"] { border-color:var(--accent); background:rgba(79,142,255,.18); color:#fff; }
+  .fs-seg button[aria-pressed="true"] { border-color:var(--accent); background:rgba(var(--accent-rgb),.18); color:#fff; }
 </style>
 </head>
 <body>
@@ -2187,7 +2200,7 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-04 r17';
+const UI_VERSION = '2026-11-13 r18';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
@@ -2215,6 +2228,7 @@ function switchTab(tab) {
     b.tabIndex = on ? 0 : -1;
     if (on && b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'center' });
   });
+  document.documentElement.dataset.tab = tab;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(`page-${tab}`).classList.add('active');
   if (tab === 'dict') loadDict();
@@ -2978,8 +2992,8 @@ async function loadSpeakers() {
     console.error('[Speaker] loadSpeakers failed:', e);
     document.getElementById('apiStatus').textContent = '接続失敗';
     const dot = document.getElementById('apiDot');
-    dot.style.background = '#ff4f6a';
-    dot.style.boxShadow = '0 0 6px #ff4f6a';
+    dot.style.background = '#ff3d71';
+    dot.style.boxShadow = '0 0 6px #ff3d71';
   }
 }
 
@@ -3119,8 +3133,8 @@ function eqDraw() {
   const an = _eq.analyser;
   const buf = new Uint8Array(an.frequencyBinCount);
   const css = getComputedStyle(document.documentElement);
-  const c1 = css.getPropertyValue('--accent').trim() || '#4f8eff';
-  const c2 = css.getPropertyValue('--accent2').trim() || '#a855f7';
+  const c1 = css.getPropertyValue('--accent').trim() || '#ffa63d';
+  const c2 = css.getPropertyValue('--accent2').trim() || '#ff5a36';
   const loop = () => {
     _eq.raf = requestAnimationFrame(loop);
     const w = cv.clientWidth * devicePixelRatio, h = cv.clientHeight * devicePixelRatio;
@@ -3773,44 +3787,44 @@ function buildSvgContent(morae, at) {
   let s = '';
 
   // H/L 参照ライン（薄い破線）
-  s += `<line x1="4" y1="${YH}" x2="${W - 4}" y2="${YH}" stroke="#1e2d4a" stroke-width="1" stroke-dasharray="3 4"/>`;
-  s += `<line x1="4" y1="${YL}" x2="${W - 4}" y2="${YL}" stroke="#1e2d4a" stroke-width="1" stroke-dasharray="3 4"/>`;
+  s += `<line x1="4" y1="${YH}" x2="${W - 4}" y2="${YH}" stroke="#4a3f33" stroke-width="1" stroke-dasharray="3 4"/>`;
+  s += `<line x1="4" y1="${YL}" x2="${W - 4}" y2="${YL}" stroke="#4a3f33" stroke-width="1" stroke-dasharray="3 4"/>`;
 
   // H/L ラベル
-  s += `<text x="3" y="${YH + 4}" font-size="8" fill="#2a3a5a" font-family="monospace">H</text>`;
-  s += `<text x="3" y="${YL + 4}" font-size="8" fill="#2a3a5a" font-family="monospace">L</text>`;
+  s += `<text x="3" y="${YH + 4}" font-size="8" fill="#6b5e4e" font-family="monospace">H</text>`;
+  s += `<text x="3" y="${YL + 4}" font-size="8" fill="#6b5e4e" font-family="monospace">L</text>`;
 
   // 単語とが の区切り線
   const sepX = 8 + (n - 1) * MW;
-  s += `<line x1="${sepX}" y1="${YH - 8}" x2="${sepX}" y2="${YTxt - 6}" stroke="#1e2d4a" stroke-width="1"/>`;
+  s += `<line x1="${sepX}" y1="${YH - 8}" x2="${sepX}" y2="${YTxt - 6}" stroke="#4a3f33" stroke-width="1"/>`;
 
   // アクセントの下がり目（垂直破線）
   if (at > 0) {
     const dropX = 8 + at * MW;
-    s += `<line x1="${dropX}" y1="${YH - 4}" x2="${dropX}" y2="${YL + 4}" stroke="rgba(79,142,255,0.5)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+    s += `<line x1="${dropX}" y1="${YH - 4}" x2="${dropX}" y2="${YL + 4}" style="stroke:rgba(var(--accent-rgb),0.5)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
   }
 
   // ピッチ接続ライン
   for (let i = 0; i < n - 1; i++) {
     const toGa = i === n - 2;
-    const color = toGa ? '#2a3a5a' : '#4f8eff';
-    s += `<line x1="${xs[i]}" y1="${ys[i]}" x2="${xs[i+1]}" y2="${ys[i+1]}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>`;
+    const color = toGa ? '#6b5e4e' : 'var(--accent)';
+    s += `<line x1="${xs[i]}" y1="${ys[i]}" x2="${xs[i+1]}" y2="${ys[i+1]}" style="stroke:${color}" stroke-width="2.5" stroke-linecap="round"/>`;
   }
 
   // モーラの点
   for (let i = 0; i < n; i++) {
     const isGa = i === n - 1;
     if (isGa) {
-      s += `<circle cx="${xs[i]}" cy="${ys[i]}" r="4" fill="#0d1120" stroke="#2a3a5a" stroke-width="2"/>`;
+      s += `<circle cx="${xs[i]}" cy="${ys[i]}" r="4" fill="#131110" stroke="#6b5e4e" stroke-width="2"/>`;
     } else {
-      s += `<circle cx="${xs[i]}" cy="${ys[i]}" r="5" fill="#4f8eff"/>`;
+      s += `<circle cx="${xs[i]}" cy="${ys[i]}" r="5" style="fill:var(--accent)"/>`;
     }
   }
 
   // モーラ文字ラベル
   for (let i = 0; i < n; i++) {
     const isGa = i === n - 1;
-    const fill = isGa ? '#2a3a5a' : '#8a9ab8';
+    const fill = isGa ? '#6b5e4e' : '#a99d8c';
     s += `<text x="${xs[i]}" y="${YTxt}" text-anchor="middle" font-size="13" font-family="'Noto Sans JP',sans-serif" fill="${fill}">${all[i]}</text>`;
   }
 
@@ -4371,7 +4385,7 @@ function repImportDragOver(e) {
   e.preventDefault();
   const el = document.getElementById('repImportDrop');
   el.style.borderColor = 'var(--accent)';
-  el.style.background = 'rgba(79,142,255,0.05)';
+  el.style.background = 'rgba(var(--accent-rgb),0.05)';
 }
 
 function repImportDragLeave(e) {
@@ -4469,7 +4483,7 @@ function dictImportDragOver(e) {
   e.preventDefault();
   const el = document.getElementById('dictImportDrop');
   el.style.borderColor = 'var(--accent)';
-  el.style.background = 'rgba(79,142,255,0.05)';
+  el.style.background = 'rgba(var(--accent-rgb),0.05)';
 }
 
 function dictImportDragLeave(e) {
@@ -4746,7 +4760,7 @@ function kanaDropOver(e) {
   e.preventDefault();
   const el = document.getElementById('kanaDropZone');
   el.style.borderColor = 'var(--accent)';
-  el.style.background = 'rgba(79,142,255,0.05)';
+  el.style.background = 'rgba(var(--accent-rgb),0.05)';
 }
 function kanaDropLeave(e) {
   const el = document.getElementById('kanaDropZone');
@@ -4945,7 +4959,7 @@ function kanaRowHtml(idx) {
   const sourceBadges = (row.sources || []).map(s =>
     s === 'replacement'
       ? `<span style="font-size:0.68rem;background:rgba(255,180,0,0.15);color:#ffb400;border:1px solid rgba(255,180,0,0.4);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">置換</span>`
-      : `<span style="font-size:0.68rem;background:rgba(79,142,255,0.12);color:var(--accent);border:1px solid rgba(79,142,255,0.35);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">辞書</span>`
+      : `<span style="font-size:0.68rem;background:rgba(var(--accent-rgb),0.12);color:var(--accent);border:1px solid rgba(var(--accent-rgb),0.35);border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">辞書</span>`
   ).join('');
 
   const kanaCell = loading
@@ -4967,7 +4981,7 @@ function kanaRowHtml(idx) {
     const tip = [reading, note].filter(Boolean).join(' — ');
     if (row.llm.correct) {
       llmBadge = `<span title="${esc(tip)}" style="display:inline-flex;align-items:center;gap:0.3rem;cursor:default;white-space:nowrap;">
-        <span style="color:#4caf50;font-weight:600;">✓</span>
+        <span style="color:#6fdc8c;font-weight:600;">✓</span>
         ${reading ? `<span style="font-size:0.78rem;color:var(--text-muted);">${esc(reading)}</span>` : ''}
       </span>`;
     } else {
@@ -5184,7 +5198,7 @@ function _readerSetState(i, state) {
     btn.innerHTML = '…'; btn.disabled = true; stat.textContent = '';
     item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else if (state === 'loading') {
-    item.style.background = 'rgba(79,142,255,0.06)';
+    item.style.background = 'rgba(var(--accent-rgb),0.06)';
     btn.textContent = '…'; btn.disabled = true; stat.textContent = '';
     item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else if (state === 'done') {

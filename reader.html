@@ -4,21 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sequential Reader — AivisSpeech</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234f8eff'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='12' y='5' width='8' height='13' rx='4' fill='white'/%3E%3Cpath d='M8 15 Q8 23 16 23 Q24 23 24 15' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cline x1='16' y1='23' x2='16' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3Cline x1='11' y1='27' x2='21' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ffa63d'/%3E%3Cstop offset='100%25' stop-color='%23ff5a36'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='12' y='5' width='8' height='13' rx='4' fill='white'/%3E%3Cpath d='M8 15 Q8 23 16 23 Q24 23 24 15' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cline x1='16' y1='23' x2='16' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3Cline x1='11' y1='27' x2='21' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #080b14;
-    --surface: #0d1120;
-    --surface2: #131929;
-    --border: #1e2d4a;
-    --accent: #4f8eff;
-    --accent2: #a855f7;
-    --text: #e8edf8;
-    --text-muted: #5a6a8a;
-    --success: #22d3a0;
-    --error: #ff4f6a;
-    --playing: #f59e0b;
+    --bg: #0b0a09;
+    --surface: #131110;
+    --surface2: #1b1816;
+    --border: #3a322a;
+    --brand1: #ffa63d;          /* ロゴ・タイトル用（タブで変わらない） */
+    --brand2: #ff5a36;
+    --accent: #ffa63d;          /* 現在のタブの色（html[data-tab]で上書き） */
+    --accent2: #ff5a36;
+    --accent-rgb: 255,166,61;
+    --accent2-rgb: 255,90,54;
+    --on-accent: #17110a;       /* アクセント地の上の文字色 */
+    --text: #f1ece4;
+    --text-muted: #8c8173;
+    --success: #6fdc8c;
+    --error: #ff3d71;
+    --playing: #ffa63d;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -32,8 +37,8 @@
     position: fixed;
     inset: 0;
     background-image:
-      linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px);
+      linear-gradient(rgba(var(--accent-rgb),0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(var(--accent-rgb),0.03) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
@@ -119,8 +124,8 @@
   .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
   .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
   .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-danger { background: rgba(255,79,106,0.15); color: var(--error); border: 1px solid rgba(255,79,106,0.3); }
-  .btn-danger:hover { background: rgba(255,79,106,0.25); }
+  .btn-danger { background: rgba(255,61,113,0.15); color: var(--error); border: 1px solid rgba(255,61,113,0.3); }
+  .btn-danger:hover { background: rgba(255,61,113,0.25); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
   /* Transport controls */
@@ -159,7 +164,7 @@
     cursor: pointer;
   }
   .line-item:last-child { border-bottom: none; }
-  .line-item:hover { background: rgba(79,142,255,0.04); }
+  .line-item:hover { background: rgba(var(--accent-rgb),0.04); }
   .line-item.active {
     background: rgba(245,158,11,0.08);
     border-left: 3px solid var(--playing);
