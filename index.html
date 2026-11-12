@@ -123,18 +123,20 @@
 
   .subtitle { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: .08em; }
 
-  /* ヘッダー右上の女性シルエット（薄く表示。操作の邪魔をしない・髪の色はタブのアクセントに追従） */
+  /* ヘッダー右上の女性シルエット（複数枚からランダム表示。基本は薄く、下側は背景に溶けるようフェード） */
   header { position: relative; }
   .mascot {
-    position: absolute; right: 4px; top: -14px;
-    width: 134px; height: 151px;
-    opacity: .5; pointer-events: none; user-select: none;
+    position: absolute; right: 6px; top: -16px;
+    width: 120px; height: 149px; object-fit: contain; object-position: center top;
+    opacity: var(--mk-o, .3); transition: opacity 1.2s ease;
+    pointer-events: none; user-select: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
+            mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
     animation: mascotFloat 7s ease-in-out infinite;
   }
-  .mascot .mk-hair-g1 { stop-color: var(--accent); }
-  .mascot .mk-hair-g2 { stop-color: var(--accent2); }
-  .mascot .mk-cup  { fill: var(--accent); }
-  .mascot .mk-band { fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; opacity: .9; }
+  .mascot.swap { opacity: 0; }
+  .mascot.flip { scale: -1 1; }                          /* 右向きの絵は左（本文側）向きに揃える */
+  .mascot.ink  { filter: invert(.93) sepia(.06); }       /* 黒の絵は暗い背景用にクリーム色へ */
   @keyframes mascotFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
   @media (prefers-reduced-motion: reduce) { .mascot { animation: none; } }
   @media (max-width: 760px) { .mascot { display: none; } }
@@ -1397,33 +1399,7 @@
       <span class="status-pill" id="hdrStatus"><i></i><span>CONNECTING</span></span>
       <span class="ui-ver" id="uiVer"></span>
     </div>
-    <svg class="mascot" viewBox="0 0 160 180" aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="mkSkin" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#f6f0e6"/><stop offset="1" stop-color="#d9cbb8"/>
-        </linearGradient>
-        <linearGradient id="mkHair" x1="0" y1="0" x2="0" y2="1">
-          <stop class="mk-hair-g1" offset="0"/><stop class="mk-hair-g2" offset="1"/>
-        </linearGradient>
-        <linearGradient id="mkFadeG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#fff"/><stop offset=".38" stop-color="#fff"/><stop offset=".84" stop-color="#000"/>
-        </linearGradient>
-        <mask id="mkFade" maskUnits="userSpaceOnUse" x="0" y="0" width="160" height="180">
-          <rect width="160" height="180" fill="url(#mkFadeG)"/>
-        </mask>
-      </defs>
-      <g mask="url(#mkFade)">
-        <!-- 長い髪（背面） -->
-        <path fill="url(#mkHair)" d="M90 10 C113 12 129 31 127 61 C126 81 122 97 128 117 C133 132 127 152 138 172 C121 163 112 152 110 137 C106 152 100 162 91 171 C98 152 96 135 94 119 C92 101 97 84 92 66 C84 46 70 34 60 38 C58 27 72 12 90 10 Z"/>
-        <!-- 顔・首・肩（横顔） -->
-        <path fill="url(#mkSkin)" d="M90 12 C70 11 56 24 55 44 C55 52 56 57 55 62 C52 68 47 74 46 79 C46 81 49 82 53 83 C52 85 51 87 51 89 C52 90 54 91 54 92 C52 94 51 95 51 97 C53 99 54 100 54 102 C54 108 56 113 62 116 C70 118 76 112 78 104 L80 131 C74 136 60 140 46 148 C36 154 28 164 24 180 L150 180 L148 152 C130 143 112 137 100 132 L96 104 C97 80 103 46 90 12 Z"/>
-        <!-- 前髪（おでこにかかる） -->
-        <path fill="url(#mkHair)" d="M90 10 C71 11 57 25 55 44 C58 40 64 38 70 38 C80 38 88 46 91 60 C94 40 97 22 90 10 Z"/>
-        <!-- ヘッドホン -->
-        <path class="mk-band" d="M60 36 C74 14 108 18 111 54"/>
-        <ellipse class="mk-cup" cx="96" cy="66" rx="7.5" ry="12"/>
-      </g>
-    </svg>
+    <img class="mascot swap" id="mascot" alt="" width="120" height="149" aria-hidden="true" decoding="async">
   </header>
 
   <nav class="tab-nav" id="tabNav" role="tablist" aria-label="メインメニュー" onkeydown="tabKeydown(event)">
@@ -2243,7 +2219,48 @@ function tabKeydown(e) {
 }
 const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends', 'settings'];
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
-const UI_VERSION = '2026-11-13 r18';
+// ヘッダー右上のシルエット：開くたびにランダム（直前と同じ絵は避ける）＋60秒ごとにフェードで入れ替え
+(function () {
+  const LIST = [
+    { f: 's1', o: .32 },
+    { f: 's2', o: .32, flip: 1 },
+    { f: 's3', o: .20 },
+    { f: 's4', o: .22 },
+    { f: 's5', o: .42, flip: 1, ink: 1 },
+    { f: 's6', o: .30, flip: 1, ink: 1 },
+  ];
+  const KEY = 'aivis_mascot';
+  let cur = -1;
+  try { cur = parseInt(localStorage.getItem(KEY), 10); if (isNaN(cur)) cur = -1; } catch (e) {}
+  const el = () => document.getElementById('mascot');
+  function pick() {
+    let i; do { i = Math.floor(Math.random() * LIST.length); } while (i === cur && LIST.length > 1);
+    return i;
+  }
+  function show(i, instant) {
+    const m = LIST[i], img = el(); if (!img) return;
+    const pre = new Image();
+    pre.onload = pre.onerror = () => {
+      img.src = 'assets/silhouettes/' + m.f + '.webp';
+      img.classList.toggle('flip', !!m.flip);
+      img.classList.toggle('ink', !!m.ink);
+      img.style.setProperty('--mk-o', m.o);
+      img.classList.remove('swap');
+      cur = i;
+      try { localStorage.setItem(KEY, String(i)); } catch (e) {}
+    };
+    pre.src = 'assets/silhouettes/' + m.f + '.webp';
+  }
+  function rotate() {
+    const img = el(); if (!img || document.hidden) return;
+    img.classList.add('swap');
+    setTimeout(() => show(pick()), 1300);
+  }
+  show(pick(), true);
+  setInterval(rotate, 60000);
+})();
+
+const UI_VERSION = '2026-11-13 r19';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
