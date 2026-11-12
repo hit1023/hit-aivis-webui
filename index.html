@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AivisSpeech Studio</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ffa63d'/%3E%3Cstop offset='100%25' stop-color='%23ff5a36'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='12' y='5' width='8' height='13' rx='4' fill='white'/%3E%3Cpath d='M8 15 Q8 23 16 23 Q24 23 24 15' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cline x1='16' y1='23' x2='16' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3Cline x1='11' y1='27' x2='21' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%232ee6d6'/%3E%3Cstop offset='100%25' stop-color='%2317a2c8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='12' y='5' width='8' height='13' rx='4' fill='white'/%3E%3Cpath d='M8 15 Q8 23 16 23 Q24 23 24 15' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cline x1='16' y1='23' x2='16' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3Cline x1='11' y1='27' x2='21' y2='27' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -14,11 +14,11 @@
     --border: #3a322a;
     --brand1: #f6f0e6;          /* ロゴ・タイトル用（クリーム。タブ色とは別） */
     --brand2: #b8aa92;
-    --accent: #ffa63d;          /* 現在のタブの色（html[data-tab]で上書き） */
-    --accent2: #ff5a36;
-    --accent-rgb: 255,166,61;
-    --accent2-rgb: 255,90,54;
-    --on-accent: #17110a;       /* アクセント地の上の文字色 */
+    --accent: #2ee6d6;          /* 現在のタブの色（html[data-tab]で上書き） */
+    --accent2: #17a2c8;
+    --accent-rgb: 46,230,214;
+    --accent2-rgb: 23,162,200;
+    --on-accent: #06191b;       /* アクセント地の上の文字色 */
     --text: #f1ece4;
     --text-muted: #8c8173;
     --success: #6fdc8c;
@@ -26,8 +26,8 @@
   }
   /* タブごとにアクセント色を変える（線・表・ボタンが追従）。やめたい場合はこのブロックを消すだけ */
   html[data-tab="dict"] { --accent: #6fdc8c; --accent2: #2fb8a0; --accent-rgb: 111,220,140; --accent2-rgb: 47,184,160; }
-  html[data-tab="replacer"] { --accent: #3fd0e0; --accent2: #7fe0c8; --accent-rgb: 63,208,224; --accent2-rgb: 127,224,200; }
-  html[data-tab="history"] { --accent: #f0d060; --accent2: #f09a40; --accent-rgb: 240,208,96; --accent2-rgb: 240,154,64; }
+  html[data-tab="replacer"] { --accent: #ffb23f; --accent2: #ff7a3a; --accent-rgb: 255,178,63; --accent2-rgb: 255,122,58; }
+  html[data-tab="history"] { --accent: #c9d3dc; --accent2: #8fa0b0; --accent-rgb: 201,211,220; --accent2-rgb: 143,160,176; }
   html[data-tab="kana"] { --accent: #ff7fa5; --accent2: #ff5a7a; --accent-rgb: 255,127,165; --accent2-rgb: 255,90,122; }
   html[data-tab="reader"] { --accent: #ff6b57; --accent2: #ffa63d; --accent-rgb: 255,107,87; --accent2-rgb: 255,166,61; }
   html[data-tab="backends"] { --accent: #b8e04a; --accent2: #5fd68a; --accent-rgb: 184,224,74; --accent2-rgb: 95,214,138; }
@@ -3133,8 +3133,8 @@ function eqDraw() {
   const an = _eq.analyser;
   const buf = new Uint8Array(an.frequencyBinCount);
   const css = getComputedStyle(document.documentElement);
-  const c1 = css.getPropertyValue('--accent').trim() || '#ffa63d';
-  const c2 = css.getPropertyValue('--accent2').trim() || '#ff5a36';
+  const c1 = css.getPropertyValue('--accent').trim() || '#2ee6d6';
+  const c2 = css.getPropertyValue('--accent2').trim() || '#17a2c8';
   const loop = () => {
     _eq.raf = requestAnimationFrame(loop);
     const w = cv.clientWidth * devicePixelRatio, h = cv.clientHeight * devicePixelRatio;
