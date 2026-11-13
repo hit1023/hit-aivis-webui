@@ -123,23 +123,21 @@
 
   .subtitle { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: .08em; }
 
-  /* ヘッダー右上の女性シルエット（複数枚からランダム表示。基本は薄く、下側は背景に溶けるようフェード） */
-  header { position: relative; }
+  /* 女性シルエット：タブ行の空き（BACKENDS と SETTINGS の間）に置き、下線の上に立たせる。
+     複数枚からランダム表示。基本は薄く。タブと重なる幅（約1060px以下）では非表示 */
+  .tab-nav { position: relative; }
   .mascot {
-    position: absolute; right: 6px; top: -16px;
-    width: 120px; height: 149px; object-fit: contain; object-position: center top;
-    opacity: var(--mk-o, .3); transition: opacity 1.2s ease;
+    position: absolute; right: 112px; bottom: 0;
+    height: 132px; width: auto;
+    opacity: var(--mk-o, .38); transition: opacity 1.2s ease;
     pointer-events: none; user-select: none;
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
-            mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
-    animation: mascotFloat 7s ease-in-out infinite;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
   }
   .mascot.swap { opacity: 0; }
   .mascot.flip { scale: -1 1; }                          /* 右向きの絵は左（本文側）向きに揃える */
   .mascot.ink  { filter: invert(.93) sepia(.06); }       /* 黒の絵は暗い背景用にクリーム色へ */
-  @keyframes mascotFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-  @media (prefers-reduced-motion: reduce) { .mascot { animation: none; } }
-  @media (max-width: 760px) { .mascot { display: none; } }
+  @media (max-width: 1060px) { .mascot { display: none; } }
 
   /* Tab Navigation */
   .tab-nav {
@@ -1399,10 +1397,11 @@
       <span class="status-pill" id="hdrStatus"><i></i><span>CONNECTING</span></span>
       <span class="ui-ver" id="uiVer"></span>
     </div>
-    <img class="mascot swap" id="mascot" alt="" width="120" height="149" aria-hidden="true" decoding="async">
+
   </header>
 
   <nav class="tab-nav" id="tabNav" role="tablist" aria-label="メインメニュー" onkeydown="tabKeydown(event)">
+    <img class="mascot swap" id="mascot" alt="" aria-hidden="true" decoding="async">
     <button class="menu-close" type="button" onclick="toggleMenu(null,false)">× 閉じる</button>
     <button class="tab-btn active" role="tab" id="tab-tts" aria-controls="page-tts" aria-selected="true" tabindex="0" onclick="switchTab('tts')"><span class="t-en">Synthesis</span><span class="t-ja">音声合成</span></button>
     <button class="tab-btn" role="tab" id="tab-dict" aria-controls="page-dict" aria-selected="false" tabindex="-1" onclick="switchTab('dict')"><span class="t-en">Dictionary</span><span class="t-ja">辞書</span></button>
@@ -2222,12 +2221,12 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
 // ヘッダー右上のシルエット：開くたびにランダム（直前と同じ絵は避ける）＋60秒ごとにフェードで入れ替え
 (function () {
   const LIST = [
-    { f: 's1', o: .32 },
-    { f: 's2', o: .32, flip: 1 },
-    { f: 's3', o: .20 },
-    { f: 's4', o: .22 },
-    { f: 's5', o: .42, flip: 1, ink: 1 },
-    { f: 's6', o: .30, flip: 1, ink: 1 },
+    { f: 's1', o: .38 },
+    { f: 's2', o: .38, flip: 1 },
+    { f: 's3', o: .26 },
+    { f: 's4', o: .28 },
+    { f: 's5', o: .5, flip: 1, ink: 1 },
+    { f: 's6', o: .4, flip: 1, ink: 1 },
   ];
   const KEY = 'aivis_mascot';
   let cur = -1;
@@ -2260,7 +2259,7 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
   setInterval(rotate, 60000);
 })();
 
-const UI_VERSION = '2026-11-13 r19';
+const UI_VERSION = '2026-11-14 r20';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
