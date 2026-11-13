@@ -123,21 +123,21 @@
 
   .subtitle { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: .08em; }
 
-  /* 女性シルエット：タブ行の空き（BACKENDS と SETTINGS の間）に置き、下線の上に立たせる。
-     複数枚からランダム表示。基本は薄く。タブと重なる幅（約1060px以下）では非表示 */
-  .tab-nav { position: relative; }
+  /* 女性シルエット：タイトル（Aivis Studio）のすぐ右隣に置く。ロゴ行の高さは変えず、上下にはみ出させる。
+     複数枚からランダム表示。基本は薄く。ハンバーガー表示（760px以下）では非表示 */
   .mascot {
-    position: absolute; right: 112px; bottom: 0;
-    height: 132px; width: auto;
+    flex: none; align-self: center;
+    height: 104px; width: auto; margin: -26px 0 -26px .1rem;
     opacity: var(--mk-o, .38); transition: opacity 1.2s ease;
     pointer-events: none; user-select: none;
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
             mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
   }
+  .logo h1, header .sub-row { position: relative; z-index: 1; }   /* 図が文字に重なっても文字を手前に */
   .mascot.swap { opacity: 0; }
   .mascot.flip { scale: -1 1; }                          /* 右向きの絵は左（本文側）向きに揃える */
   .mascot.ink  { filter: invert(.93) sepia(.06); }       /* 黒の絵は暗い背景用にクリーム色へ */
-  @media (max-width: 1060px) { .mascot { display: none; } }
+  @media (max-width: 760px) { .mascot { display: none; } }
 
   /* Tab Navigation */
   .tab-nav {
@@ -1388,6 +1388,7 @@
     <div class="logo">
       <div class="logo-icon" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       <h1><span class="w1">Aivis</span><span class="w2">Studio</span></h1>
+      <img class="mascot swap" id="mascot" alt="" aria-hidden="true" decoding="async">
     </div>
     <button class="menu-btn" id="menuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tabNav" onclick="toggleMenu(event)">
       <span class="mb-bars" aria-hidden="true"></span><span class="mb-cur" id="menuCur">音声合成</span>
@@ -1401,7 +1402,6 @@
   </header>
 
   <nav class="tab-nav" id="tabNav" role="tablist" aria-label="メインメニュー" onkeydown="tabKeydown(event)">
-    <img class="mascot swap" id="mascot" alt="" aria-hidden="true" decoding="async">
     <button class="menu-close" type="button" onclick="toggleMenu(null,false)">× 閉じる</button>
     <button class="tab-btn active" role="tab" id="tab-tts" aria-controls="page-tts" aria-selected="true" tabindex="0" onclick="switchTab('tts')"><span class="t-en">Synthesis</span><span class="t-ja">音声合成</span></button>
     <button class="tab-btn" role="tab" id="tab-dict" aria-controls="page-dict" aria-selected="false" tabindex="-1" onclick="switchTab('dict')"><span class="t-en">Dictionary</span><span class="t-ja">辞書</span></button>
@@ -2259,7 +2259,7 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
   setInterval(rotate, 60000);
 })();
 
-const UI_VERSION = '2026-11-14 r20';
+const UI_VERSION = '2026-11-14 r21';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
