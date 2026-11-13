@@ -123,11 +123,11 @@
 
   .subtitle { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: .08em; }
 
-  /* 女性シルエット：タイトル（Aivis Studio）のすぐ右隣に置く。ロゴ行の高さは変えず、上下にはみ出させる。
+  /* 女性シルエット：タイトル（Aivis Studio）のすぐ右隣に、ロゴ行（波形アイコン）と同じ高さで置く。
      複数枚からランダム表示。基本は薄く。ハンバーガー表示（760px以下）では非表示 */
   .mascot {
     flex: none; align-self: center;
-    height: 104px; width: auto; margin: -26px 0 -26px .1rem;
+    height: 52px; width: auto; margin: 0 0 0 .6rem;
     opacity: var(--mk-o, .38); transition: opacity 1.2s ease;
     pointer-events: none; user-select: none;
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
@@ -2259,7 +2259,7 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
   setInterval(rotate, 60000);
 })();
 
-const UI_VERSION = '2026-11-14 r21';
+const UI_VERSION = '2026-11-14 r22';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
