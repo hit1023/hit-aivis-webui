@@ -2293,13 +2293,10 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
 // 画面の版（反映されたか目で確認するため。push のたびに更新する）
 // ヘッダー右上のシルエット：開くたびにランダム（直前と同じ絵は避ける）＋60秒ごとにフェードで入れ替え
 (function () {
+  // 現在はティールのイラスト1枚（絵を増やすと、開くたびランダム＋60秒ごとに入れ替わる）。
+  // 以前のシルエット（s1〜s6）は assets/silhouettes/ に残してある。
   const LIST = [
-    { f: 's1', o: .38 },
-    { f: 's2', o: .38, flip: 1 },
-    { f: 's3', o: .26 },
-    { f: 's4', o: .28 },
-    { f: 's5', o: .5, flip: 1, ink: 1 },
-    { f: 's6', o: .4, flip: 1, ink: 1 },
+    { f: 'teal', o: .6 },
   ];
   const KEY = 'aivis_mascot';
   let cur = -1;
@@ -2324,7 +2321,7 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
     pre.src = 'assets/silhouettes/' + m.f + '.webp';
   }
   function rotate() {
-    const img = el(); if (!img || document.hidden) return;
+    const img = el(); if (!img || document.hidden || LIST.length < 2) return;
     img.classList.add('swap');
     setTimeout(() => show(pick()), 1300);
   }
@@ -2430,7 +2427,7 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
   };
 })();
 
-const UI_VERSION = '2026-11-14 r24';
+const UI_VERSION = '2026-11-15 r25';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
