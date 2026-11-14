@@ -139,6 +139,37 @@
   .mascot.ink  { filter: invert(.93) sepia(.06); }       /* 黒の絵は暗い背景用にクリーム色へ */
   @media (max-width: 760px) { .mascot { display: none; } }
 
+  /* 右上のライブ表示：音声ビジュアライザ（再生に反応）＋エンジンの鼓動（稼働ドットと応答時間）。
+     ロゴ行と同じ高さで右端に置いて余白を埋める。820px以下は非表示 */
+  header { position: relative; }
+  .hdr-live { position: absolute; top: 0; right: 0; height: 52px; display: flex; align-items: center; gap: 14px; }
+  .hl-viz {
+    width: 250px; height: 52px; display: block; pointer-events: none;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 40%);
+            mask-image: linear-gradient(to right, transparent 0%, #000 40%);   /* 左（タイトル側）へ溶ける */
+  }
+  .hl-beat {
+    appearance: none; -webkit-appearance: none; background: none; border: 0; border-radius: 0; margin: 0;
+    font: inherit; color: inherit; text-align: left; cursor: pointer;
+    width: 134px; height: 44px; padding: 0 0 0 14px; border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  }
+  .hl-beat:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+  .hl-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+            font-family: 'JetBrains Mono', monospace; font-size: .68rem; letter-spacing: .04em; color: var(--text-muted); }
+  .hl-beat:hover .hl-ms { color: var(--text); }
+  .hl-dots { display: flex; gap: 5px; align-items: center; }
+  .hl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
+  .hl-dot.ok   { background: var(--success); box-shadow: 0 0 6px var(--success); animation: pulse 2.4s infinite; }
+  .hl-dot.ng   { background: var(--error);   box-shadow: 0 0 6px var(--error); }
+  .hl-dot.sync { background: #f5b94a; }
+  .hl-dot.off  { opacity: .35; }
+  .hl-spark { width: 100%; height: 20px; display: block; overflow: visible; }
+  .hl-spark polyline { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round;
+                       vector-effect: non-scaling-stroke; opacity: .85; transition: stroke .6s ease; }
+  @media (prefers-reduced-motion: reduce) { .hl-dot.ok { animation: none; } }
+  @media (max-width: 820px) { .hdr-live { display: none; } }
+
   /* Tab Navigation */
   .tab-nav {
     display: flex;
@@ -1390,6 +1421,13 @@
       <h1><span class="w1">Aivis</span><span class="w2">Studio</span></h1>
       <img class="mascot swap" id="mascot" alt="" aria-hidden="true" decoding="async">
     </div>
+    <div class="hdr-live">
+      <canvas class="hl-viz" id="hdrViz" aria-hidden="true"></canvas>
+      <button class="hl-beat" id="hdrBeat" type="button" aria-label="稼働状況（BACKENDS）を開く" title="エンジンの稼働状況を開く" onclick="switchTab('backends')">
+        <span class="hl-top"><span class="hl-dots" id="hlDots"></span><span class="hl-ms" id="hlMs">—</span></span>
+        <svg class="hl-spark" viewBox="0 0 120 20" preserveAspectRatio="none" aria-hidden="true"><polyline id="hlLine" points="0,10 120,10"/></svg>
+      </button>
+    </div>
     <button class="menu-btn" id="menuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tabNav" onclick="toggleMenu(event)">
       <span class="mb-bars" aria-hidden="true"></span><span class="mb-cur" id="menuCur">音声合成</span>
     </button>
@@ -2259,7 +2297,105 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
   setInterval(rotate, 60000);
 })();
 
-const UI_VERSION = '2026-11-14 r22';
+// ---- 右上のライブ表示 ----
+// B: 音声ビジュアライザ。待機中はゆっくり呼吸し、再生中は EQ 後段のアナライザー（_eq.analyser）に合わせて動く。
+// A: エンジンの鼓動。稼働ドットと応答時間の平均＋直近の推移。クリックで稼働状況タブへ。
+(function () {
+  const cv = document.getElementById('hdrViz');
+  if (!cv || !cv.getContext) return;
+  const g = cv.getContext('2d');
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const N = 56, lev = new Float32Array(N);
+  let act = 0, buf = null, last = 0, c1 = '#2ee6d6', c2 = '#17a2c8', cAt = 0;
+  const audio = document.getElementById('audioPlayer');
+
+  function readColors(now) {                         // タブごとにアクセントが変わるので時々読み直す
+    if (now - cAt < 800) return; cAt = now;
+    const css = getComputedStyle(document.documentElement);
+    c1 = css.getPropertyValue('--accent').trim() || c1;
+    c2 = css.getPropertyValue('--accent2').trim() || c2;
+  }
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (document.hidden || cv.offsetParent === null) return;   // 非表示タブ・760px以下の非表示中は描かない
+    let an = null; try { an = _eq.analyser; } catch {}
+    const playing = !!(an && audio && !audio.paused && !audio.ended);
+    if (now - last < (playing ? 16 : 33)) return;
+    last = now;
+    readColors(now);
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+
+    if (playing) {
+      if (!buf || buf.length !== an.frequencyBinCount) buf = new Uint8Array(an.frequencyBinCount);
+      an.getByteFrequencyData(buf);
+    }
+    const nyq = playing ? an.context.sampleRate / 2 : 0;
+    for (let i = 0; i < N; i++) {
+      let t;
+      if (playing) {
+        const f0 = 60 * Math.pow(170, i / N), f1 = 60 * Math.pow(170, (i + 1) / N);   // 60Hz〜10kHz の対数軸
+        const b0 = Math.floor(f0 / nyq * buf.length), b1 = Math.max(b0 + 1, Math.floor(f1 / nyq * buf.length));
+        let m = 0; for (let k = b0; k < b1 && k < buf.length; k++) m = Math.max(m, buf[k]);
+        t = Math.pow(m / 255, 0.9);
+      } else {
+        const bell = Math.sqrt(Math.sin(Math.PI * (i + .5) / N));
+        t = reduce ? .06 : .05 + .08 * (.5 + .5 * Math.sin(now / 700 + i * .42)) * bell;
+      }
+      lev[i] += (t - lev[i]) * (t > lev[i] ? .5 : .12);
+    }
+    act += ((playing ? 1 : 0) - act) * .08;
+
+    g.clearRect(0, 0, w, h);
+    const grad = g.createLinearGradient(0, 0, w, 0); grad.addColorStop(0, c2); grad.addColorStop(1, c1);
+    g.strokeStyle = grad; g.globalAlpha = .38 + .5 * act;
+    const bw = w / N; g.lineWidth = Math.max(2 * dpr, bw * .5); g.lineCap = 'round';
+    g.beginPath();
+    for (let i = 0; i < N; i++) {
+      const half = Math.max(1.5 * dpr, lev[i] * h * .46), x = (i + .5) * bw;
+      g.moveTo(x, h / 2 - half); g.lineTo(x, h / 2 + half);
+    }
+    g.stroke(); g.globalAlpha = 1;
+  }
+  requestAnimationFrame(frame);
+
+  // A: エンジンの鼓動
+  const hist = [], MAX = 36;
+  window.hdrLiveUpdate = function (d) {
+    const dots = document.getElementById('hlDots'), ms = document.getElementById('hlMs'), line = document.getElementById('hlLine');
+    if (!dots || !ms || !line) return;
+    dots.replaceChildren();
+    if (!d || !Array.isArray(d.backends)) {            // 取得できなかった：ドットは灰色、数値は —
+      const i = document.createElement('i'); i.className = 'hl-dot off'; dots.append(i);
+      ms.textContent = '—'; ms.style.color = '';
+      return;
+    }
+    d.backends.slice(0, 8).forEach((b, k) => {
+      const st = b.state || 'active', i = document.createElement('i');
+      i.className = 'hl-dot ' + (st === 'disabled' ? 'off' : st === 'syncing' ? 'sync' : b.ok ? 'ok' : 'ng');
+      if (b.ok && st === 'active') i.style.animationDelay = (-k * .5) + 's';
+      dots.append(i);
+    });
+    const lat = d.backends.filter(b => (b.state || 'active') === 'active' && b.ok && typeof b.latency_ms === 'number').map(b => b.latency_ms);
+    if (lat.length) {
+      const avg = Math.round(lat.reduce((a, c) => a + c, 0) / lat.length);
+      hist.push(avg); if (hist.length > MAX) hist.shift();
+      ms.textContent = avg + ' ms'; ms.style.color = bkLatencyColor(avg);
+      line.style.stroke = bkLatencyColor(avg);
+    } else {
+      ms.textContent = d.provider === 'aivis_cloud' ? 'CLOUD' : '—'; ms.style.color = '';
+    }
+    if (hist.length >= 2) {
+      const lo = Math.min(...hist), hi = Math.max(...hist), span = Math.max(hi - lo, 20), mid = (hi + lo) / 2;
+      line.setAttribute('points', hist.map((v, k) =>
+        `${(k / (hist.length - 1) * 120).toFixed(1)},${(10 - (v - mid) / span * 16).toFixed(1)}`).join(' '));
+    }
+  };
+})();
+
+const UI_VERSION = '2026-11-14 r23';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
@@ -2524,7 +2660,9 @@ async function hdrStatusRefresh() {
     el.className = 'status-pill ' + (up === act.length ? 'ok' : 'ng');
     el.lastChild.textContent = d.provider === 'aivis_cloud' ? 'AIVIS CLOUD'
       : `${up}/${act.length} ENGINES ONLINE` + (syncN ? ` · ${syncN} SYNCING` : '');
+    if (window.hdrLiveUpdate) hdrLiveUpdate(d);
   } catch (e) {
+    if (window.hdrLiveUpdate) hdrLiveUpdate(null);
     // 失敗の理由(通信エラーは TypeError=端末↔APIの経路で切れた)を短く表示して切り分けやすくする
     const why = e && e.name === 'TypeError' ? '通信エラー' : (e && e.message) || '不明';
     // 稼働状況(/backends/status)が取れなくても、APIそのものが生きていれば OFFLINE とは言わない
@@ -2538,7 +2676,7 @@ async function hdrStatusRefresh() {
   }
 }
 hdrStatusRefresh();
-setInterval(hdrStatusRefresh, 30000);
+setInterval(() => { if (!document.hidden) hdrStatusRefresh(); }, 10000);   // 右上の応答時間グラフのため10秒ごと（非表示タブでは止める）
 
 function backendsInit() {
   document.getElementById('backendsAdminToken').value = getAdminToken();
