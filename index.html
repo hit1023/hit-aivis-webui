@@ -2431,7 +2431,7 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
   };
 })();
 
-const UI_VERSION = '2026-11-15 r26';
+const UI_VERSION = '2026-11-15 r27';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
@@ -3761,9 +3761,17 @@ function uploadShowStatus(msg, type) {
 // 認証ヘッダーを付けるため EventSource ではなく fetch のストリームで読む。
 // ストリームが切れたら状態 API で確認し、まだ実行中なら再接続する。
 async function waitInstallBySSE(jobId) {
-  const started = new Set(), done = new Set();
-  const render = () => uploadShowStatus(
-    `インストール中... ノード ${done.size} / ${started.size} 完了`, '');
+  const nodes = new Map();   // backend_url -> started | retrying | done | failed
+  const render = () => {
+    const all = [...nodes.values()];
+    const done = all.filter(v => v === 'done' || v === 'failed').length;
+    const retrying = all.filter(v => v === 'retrying').length;
+    const failed = all.filter(v => v === 'failed').length;
+    uploadShowStatus(
+      `インストール中... ノード ${done} / ${all.length} 完了`
+      + (retrying ? `（${retrying} 台は接続できず、やり直し中）` : '')
+      + (failed ? `（${failed} 台は失敗）` : ''), '');
+  };
   for (let attempt = 0; attempt < 200; attempt++) {
     try {
       const res = await apiFetch(`/events/install`, { headers: { 'Accept': 'text/event-stream' } });
@@ -3782,11 +3790,19 @@ async function waitInstallBySSE(jobId) {
           if (!m) continue; // ": ping" などのコメント行
           const ev = JSON.parse(m[1]);
           if (ev.type === 'snapshot' && ev.job_id === jobId && ev.state !== 'running') { reader.cancel(); return ev; }
+          if (ev.type === 'snapshot' && ev.job_id === jobId && ev.nodes) {
+            // 途中から接続したとき（ページを開き直した・ルーターが再起動して再開した）は、各台の今の状態から表示する
+            for (const [u, n] of Object.entries(ev.nodes)) {
+              nodes.set(u, { running: 'started', retrying: 'retrying', done: 'done', failed: 'failed' }[n.status] || 'started');
+            }
+            render();
+          }
           if (ev.job_id !== jobId) continue;
           if (ev.type === 'node') {
-            if (ev.status === 'started') started.add(ev.backend_url);
-            else { started.add(ev.backend_url); done.add(ev.backend_url); }
+            nodes.set(ev.backend_url, { started: 'started', retry: 'retrying', done: 'done', failed: 'failed' }[ev.status] || 'started');
             render();
+          } else if (ev.type === 'resume') {
+            uploadShowStatus(`ルーターが再起動したので、残り ${ev.pending.length} 台のインストールを再開しました`, '');
           } else if (ev.type === 'finish') { reader.cancel(); return ev; }
         }
       }
@@ -3824,6 +3840,23 @@ async function installModel() {
   } finally {
     btn.disabled = false;
   }
+}
+
+// ページを開いた（開き直した）とき、裏でインストールが続いていれば、その進捗に再接続する。
+async function resumeInstallWatch() {
+  try {
+    const sr = await apiFetch(`/models/install/status`);
+    if (!sr.ok) return;
+    const st = await sr.json();
+    if (st.state !== 'running' || !st.job_id) return;
+    const btn = document.getElementById('uploadBtn');
+    if (btn) btn.disabled = true;
+    uploadShowStatus('インストールが続いています。進捗を確認しています...', '');
+    const fin = await waitInstallBySSE(st.job_id);
+    if (fin.state === 'done') { uploadShowStatus(`✓ ${fin.message}`, 'success'); await loadModels(); }
+    else uploadShowStatus(`エラー: ${fin.message || 'インストール失敗'}`, 'error');
+    if (btn) btn.disabled = false;
+  } catch (_) { /* 接続できなければ何もしない */ }
 }
 
 async function unloadModel(uuid, name) {
@@ -5549,6 +5582,7 @@ document.getElementById('readerInput').addEventListener('keydown', function(e) {
 // ==========================================
 loadSpeakers();
 loadModels();
+resumeInstallWatch();
 setInterval(loadModels, 30000);
 
 // 追加フォームのアクセントビジュアライザー初期化
