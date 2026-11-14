@@ -106,6 +106,13 @@ AIVIS_API_URL=https://your-aivis-router-url
 
 コンテナ起動時に `docker-entrypoint.sh` が `index.html` 内のプレースホルダーを自動置換します。
 
+### 表示モード（かんたん / 詳細）
+
+自宅サーバー向けの機能（サーバー管理タブ、稼働グラフ、LLMによる読み確認）を隠す「かんたんモード」があります。
+
+- 既定値: `.env` の `AIVIS_UI_MODE=simple`（未設定は `full`）
+- 切り替え: 設定タブの「表示モード」、または URL に `?mode=simple` / `?mode=full`（ブラウザに保存されます）
+
 ---
 
 ## 更新履歴
