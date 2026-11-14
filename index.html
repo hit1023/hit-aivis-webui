@@ -1008,6 +1008,10 @@
   .word-priority { font-size: 0.7rem; color: var(--text-muted); font-family: 'Syne', sans-serif; }
 
   .word-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+  /* 長い語・URLなど途中で切れない文字列でも、右端の操作ボタンが見切れないようにする */
+  .word-row-main > div { min-width: 0; overflow-wrap: anywhere; }
+  .word-surface, .word-reading { overflow-wrap: anywhere; }
+  .word-row-main .word-actions, .word-row-main .word-meta { overflow-wrap: normal; }
 
   .btn-edit {
     padding: 0.3rem 0.7rem;
@@ -2427,7 +2431,7 @@ const _TABS = ['tts', 'dict', 'replacer', 'history', 'kana', 'reader', 'backends
   };
 })();
 
-const UI_VERSION = '2026-11-15 r25';
+const UI_VERSION = '2026-11-15 r26';
 document.getElementById('uiVer').textContent = 'UI ' + UI_VERSION;
 const _LS_FS = 'aivis_fs';
 function setFontSize(v, save = true) {
