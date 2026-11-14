@@ -131,6 +131,8 @@ AIVIS_API_URL=https://your-aivis-router-url
 
 ## ライセンスとクレジット
 
+このリポジトリのコードは [MIT License](LICENSE) です。
+
 - **AivisSpeech / AivisSpeech Engine**: [Aivis Project](https://github.com/Aivis-Project)（LGPL-3.0）。このリポジトリには含まれていません。音声合成はエンジン側が行います。
 - **音声モデル**: [Aivis Hub](https://hub.aivis-project.com/) でダウンロードできます。モデルごとに利用規約・ライセンスがあります（例: ACML）。使うモデルの条件に従ってください。
 - **フォント**: Syne、JetBrains Mono、Noto Sans JP（いずれも SIL Open Font License 1.1）を Google Fonts から読み込みます。
